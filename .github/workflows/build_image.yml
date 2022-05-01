@@ -16,6 +16,7 @@ jobs:
         chown -R build:build /home/build/openwrt_workflow 
         cd /home/build/openwrt 
 
+        nproc
         sudo -u build chmod +x /home/build/openwrt_workflow/build.sh 
         sudo -u build /home/build/openwrt_workflow/build.sh 
 

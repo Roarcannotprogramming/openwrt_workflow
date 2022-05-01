@@ -12,7 +12,7 @@ cp -r /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992a
 ./scripts/feeds update -a
 ./scripts/feeds install luci-app-passwall
 make defconfig
-make package/luci-app-passwall/compile V=s -j1
+make package/luci-app-passwall/compile V=99 -j $(nproc)
 
 pushd bin/packages/x86_64
 tar zcvf passwall.tar.gz passwall/
