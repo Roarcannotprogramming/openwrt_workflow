@@ -12,5 +12,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Print Pwd
       run: |
-        uname -a; pwd; ls -alh
+        chown -R build:build /__w
+        sudo -u build cp -r /__w/openwrt_workflow/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2 /home/build/openwrt 
+        cd /home/build/openwrt && pwd && ls 
+        pwd
   
