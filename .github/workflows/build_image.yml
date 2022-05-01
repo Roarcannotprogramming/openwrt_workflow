@@ -8,6 +8,7 @@ jobs:
 #    container: 
 #      image: openwrtorg/sdk:x86_64-master
     steps:
+    - uses: actions/checkout@v3
     - name: Print Pwd
       run: |
         pwd; ls -alh
