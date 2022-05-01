@@ -1,0 +1,14 @@
+name: build_image
+on: push
+
+jobs:
+  build_passwall:
+    name: Build Passwall
+    runs-on: ubuntu-latest
+#    container: 
+#      image: openwrtorg/sdk:x86_64-master
+    steps:
+    - name: Print Pwd
+      run: |
+        pwd; ls -alh
+  
