@@ -9,7 +9,7 @@ jobs:
       image: openwrtorg/sdk:x86_64-master
       options: --user build
       volumes:
-        - openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2: /home/build/openwrt-passwall
+        - ./openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2/: /home/build/openwrt-passwall/
     steps:
     - uses: actions/checkout@v3
     - name: Print Pwd
