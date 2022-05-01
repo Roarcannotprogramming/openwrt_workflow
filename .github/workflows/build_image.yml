@@ -10,16 +10,51 @@ jobs:
       options: --user root
     steps:
     - uses: actions/checkout@v3
-    - name: Print Pwd
+    - name: Run Make
       run: |
         cp -r /__w/openwrt_workflow/openwrt_workflow /home/build/openwrt_workflow 
         chown -R build:build /home/build/openwrt_workflow 
         cd /home/build/openwrt 
 
-        nproc
         sudo -u build chmod +x /home/build/openwrt_workflow/build.sh 
         sudo -u build /home/build/openwrt_workflow/build.sh 
+        cp bin/packages/x86_64/passwall.tar.gz /__w/openwrt_workflow/openwrt_workflow/
+    - uses: actions/upload-artifact@v3
+      with:
+        name: passwall
+        path: passwall.tar.gz 
 
+  build_image:
+    name: Build Image
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/imagebuilder:x86-64-master
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: passwall
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt
+        mv $VOLUME_HOME/passwall.tar.gz packages
+        pushd packages
+        tar zxvf passwall.tar.gz
+        rm passwall.tar.gz
+        popd
+        chown -R build:build packages
+        sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=1024/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=256/g" .config
+        sudo -u build make image PROFILE=generic PACKAGES="luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc luci-i18n-base-zh-cn netdata luci-app-passwall -dnsmasq"
+        cd bin/targets/x86/64/ 
+        tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
+    - uses: actions/upload-artifact@v3
+      with:
+          name: openwrt
+          path: openwrt-x86-64-master.tar.gz
 
 
   
