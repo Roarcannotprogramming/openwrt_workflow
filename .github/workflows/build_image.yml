@@ -26,6 +26,7 @@ jobs:
 
   build_image:
     name: Build Image
+    needs: build_passwall
     runs-on: ubuntu-latest
     container: 
       image: openwrtorg/imagebuilder:x86-64-master
