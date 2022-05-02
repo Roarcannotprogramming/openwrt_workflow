@@ -8,6 +8,9 @@ jobs:
     container: 
       image: openwrtorg/sdk:x86_64-master
       options: --user root
+    defaults:
+      run:
+        shell: bash
     steps:
     - uses: actions/checkout@v3
     - name: Run Make
@@ -24,9 +27,34 @@ jobs:
         name: passwall
         path: passwall.tar.gz 
 
+  build_theme_argon:
+    name: Build Argon 
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/sdk:x86_64-master
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt 
+        sudo -u build git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+        sudo -u build ./scripts/feeds update -a
+        sudo -u build make defconfig
+        sudo -u make package/luci-theme-argon/compile V=s -j1
+        tar zcvf $VOLUME_HOME/luci-theme-argon.tar.gz bin/packages/x86_64/base/luci-theme-argon_2.2.9.4_all.ipk
+    - uses: actions/upload-artifact@v3
+      with:
+        name: luci-theme-argon
+        path: luci-theme-argon.tar.gz 
+
   build_image:
     name: Build Image
-    needs: build_passwall
+    needs: [build_passwall, build_theme_argon]
     runs-on: ubuntu-latest
     container: 
       image: openwrtorg/imagebuilder:x86-64-master
@@ -38,8 +66,14 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: passwall
+    - uses: actions/download-artifact@v3
+      with:
+        name: luci-theme-argon
     - name: Run Make
       run: |
+        apt update
+        apt upgrade -y
+        apt install git -y
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
         mv $VOLUME_HOME/passwall.tar.gz packages
@@ -49,7 +83,7 @@ jobs:
         popd
         chown -R build:build packages
         sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=1024/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=256/g" .config
-        sudo -u build make image PROFILE=generic PACKAGES="luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc luci-i18n-base-zh-cn netdata luci-app-passwall -dnsmasq"
+        sudo -u build make image PROFILE=generic PACKAGES="luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc luci-i18n-base-zh-cn netdata luci-app-passwall luci-theme-argon -dnsmasq"
         cd bin/targets/x86/64/ 
         tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
     - uses: actions/upload-artifact@v3
