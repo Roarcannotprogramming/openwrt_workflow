@@ -51,10 +51,38 @@ jobs:
       with:
         name: luci-theme-argon
         path: luci-theme-argon.tar.gz 
+  
+  # luci app netdata has some bugs, so just not use it for now!
+  build_luci_app_netdata:
+    name: Build Luci App Netdata 
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/sdk:x86_64-master
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt 
+        sudo -u build git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
+        sudo -u build ./scripts/feeds update -a
+        sudo -u build ./scripts/feeds install -a
+        sudo -u build make defconfig
+        sudo -u build make package/luci-app-netdata/compile V=s -j1
+        ls -alh bin/packages/x86_64/base/
+        tar zcvf $VOLUME_HOME/luci-app-netdata.tar.gz bin/packages/x86_64/base/luci-app-netdata*.ipk
+    - uses: actions/upload-artifact@v3
+      with:
+        name: luci-app-netdata
+        path: luci-app-netdata.tar.gz 
 
   build_image:
     name: Build Image
-    needs: [build_passwall, build_theme_argon]
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
     runs-on: ubuntu-latest
     container: 
       image: openwrtorg/imagebuilder:x86-64-master
@@ -69,6 +97,9 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: luci-theme-argon
+    - uses: actions/download-artifact@v3
+      with:
+        name: luci-app-netdata
     - name: Prepare Passwall
       run: |
         export VOLUME_HOME=$(pwd)
@@ -87,6 +118,15 @@ jobs:
         tar zxvf luci-theme-argon.tar.gz
         rm luci-theme-argon.tar.gz
         popd
+    - name: Prepare Netdata
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt
+        mv $VOLUME_HOME/luci-app-netdata.tar.gz packages
+        pushd packages
+        tar zxvf luci-app-netdata.tar.gz
+        rm luci-app-netdata.tar.gz
+        popd
     - name: Debug Print
       run: |
         ls -alh /home/build/openwrt/packages
@@ -96,7 +136,7 @@ jobs:
         cd /home/build/openwrt
         chown -R build:build packages
         sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=1024/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=256/g" .config
-        sudo -u build make image PROFILE=generic PACKAGES="luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc luci-i18n-base-zh-cn netdata luci-app-passwall luci-theme-argon -dnsmasq"
+        sudo -u build make image PROFILE=generic PACKAGES="luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc luci-i18n-base-zh-cn netdata luci-app-passwall luci-theme-argon samba4-server luci-app-samba4 luci-app-ttyd ntpclient luci-app-ntpc -dnsmasq"
         cd bin/targets/x86/64/ 
         tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
     - uses: actions/upload-artifact@v3
