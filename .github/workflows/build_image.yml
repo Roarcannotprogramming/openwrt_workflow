@@ -45,7 +45,7 @@ jobs:
         sudo -u build git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
         sudo -u build ./scripts/feeds update -a
         sudo -u build make defconfig
-        sudo -u make package/luci-theme-argon/compile V=s -j1
+        sudo -u build make package/luci-theme-argon/compile V=s -j1
         tar zcvf $VOLUME_HOME/luci-theme-argon.tar.gz bin/packages/x86_64/base/luci-theme-argon_2.2.9.4_all.ipk
     - uses: actions/upload-artifact@v3
       with:
