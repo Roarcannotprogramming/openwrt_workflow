@@ -135,12 +135,18 @@ jobs:
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
         chown -R build:build packages
-        sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=1024/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=256/g" .config
-        sudo -u build make image PROFILE=generic PACKAGES="luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e \
-                                                           luci-i18n-base-zh-cn netdata luci-app-passwall luci-theme-argon samba4-server \ 
-                                                           luci-app-samba4 luci-app-ttyd ntpclient luci-app-ntpc -dnsmasq"
+        sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
+        sudo -u build make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }}"
         cd bin/targets/x86/64/ 
         tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
+      env:
+        rootfs_size: 1024
+        kernel_size: 256
+        profile: generic
+        packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
+                  luci-i18n-base-zh-cn netdata luci-app-passwall luci-theme-argon samba4-server
+                  luci-app-samba4 luci-app-ttyd ntpclient luci-app-ntpc pciutils vim python3 python3-yaml
+                  coreutils-timeout lm-sensors lm-sensors-detect -dnsmasq
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
