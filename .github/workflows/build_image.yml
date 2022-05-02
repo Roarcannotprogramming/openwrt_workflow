@@ -144,9 +144,13 @@ jobs:
         kernel_size: 256
         profile: generic
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
-                  luci-i18n-base-zh-cn netdata luci-app-passwall luci-theme-argon samba4-server
-                  luci-app-samba4 luci-app-ttyd ntpclient luci-app-ntpc pciutils vim python3 python3-yaml
-                  coreutils-timeout lm-sensors lm-sensors-detect -dnsmasq
+                  luci-i18n-base-zh-cn netdata luci-theme-argon samba4-server luci-app-samba4 
+                  luci-app-ttyd ntpclient luci-app-ntpc pciutils vim python3 python3-yaml
+                  coreutils-timeout lm-sensors lm-sensors-detect luci-app-passwall chinadns-ng
+                  dns2socks ipt2socks luci-i18n-passwall-zh-cn microsocks pdnsd-alt
+                  shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
+                  shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs simple-obfs-server
+                  tcping trojan-plus v2ray-core v2ray-plugin v2ray-extra v2ray-example -dnsmasq
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
