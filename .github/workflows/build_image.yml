@@ -16,7 +16,6 @@ jobs:
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
-        ls -alh $VOLUME_HOME
         cp -r $VOLUME_HOME /home/build/openwrt_workflow 
         wget https://github.com/xiaorouji/openwrt-passwall/archive/3aff3af88536227d12fb7206992af64ff21cf4d2.zip -O /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip 
         cd /home/build/openwrt_workflow 
@@ -97,7 +96,6 @@ jobs:
         sudo -u build ./scripts/feeds install -a
         sudo -u build make defconfig
         sudo -u build make package/luci-app-netdata/compile V=s -j1
-        ls -alh bin/packages/x86_64/base/
         tar zcvf $VOLUME_HOME/luci-app-netdata.tar.gz bin/packages/x86_64/base/luci-app-netdata*.ipk
     - uses: actions/upload-artifact@v3
       with:
