@@ -1,5 +1,5 @@
 name: build_image
-on: push
+on: release
 
 jobs:
   build_passwall:
@@ -20,7 +20,7 @@ jobs:
         cp -r $VOLUME_HOME /home/build/openwrt_workflow 
         wget https://github.com/xiaorouji/openwrt-passwall/archive/3aff3af88536227d12fb7206992af64ff21cf4d2.zip -O /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip 
         cd /home/build/openwrt_workflow 
-        unzip openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip
+        unzip -o openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip
         chown -R build:build /home/build/openwrt_workflow 
         cd /home/build/openwrt 
 
@@ -174,7 +174,7 @@ jobs:
                   dns2socks ipt2socks luci-i18n-passwall-zh-cn microsocks pdnsd-alt
                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
                   shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs simple-obfs-server
-                  tcping trojan-plus v2ray-core v2ray-plugin v2ray-extra v2ray-example -dnsmasq
+                  tcping trojan-plus v2ray-core v2ray-plugin v2ray-extra v2ray-example open-vm-tools -dnsmasq
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
