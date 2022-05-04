@@ -12,10 +12,11 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v3
+    # - uses: actions/checkout@v3
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
+        ls -alh $VOLUME_HOME
         cp -r $VOLUME_HOME /home/build/openwrt_workflow 
         wget https://github.com/xiaorouji/openwrt-passwall/archive/3aff3af88536227d12fb7206992af64ff21cf4d2.zip -O /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip 
         cd /home/build/openwrt_workflow 
