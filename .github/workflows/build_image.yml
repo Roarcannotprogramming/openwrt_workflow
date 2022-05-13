@@ -16,15 +16,15 @@ jobs:
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
-        cp -r $VOLUME_HOME /home/build/openwrt_workflow 
-        wget https://github.com/xiaorouji/openwrt-passwall/archive/3aff3af88536227d12fb7206992af64ff21cf4d2.zip -O /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip 
-        cd /home/build/openwrt_workflow 
-        unzip -o openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip
-        chown -R build:build /home/build/openwrt_workflow 
+        ### cp -r $VOLUME_HOME /home/build/openwrt_workflow 
+        ### wget https://github.com/xiaorouji/openwrt-passwall/archive/3aff3af88536227d12fb7206992af64ff21cf4d2.zip -O /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip 
+        ### cd /home/build/openwrt_workflow 
+        ### unzip -o openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip
+        ### chown -R build:build /home/build/openwrt_workflow 
         cd /home/build/openwrt 
 
-        # sudo -u build chmod +x /home/build/openwrt_workflow/build.sh 
-        # sudo -u build /home/build/openwrt_workflow/build.sh 
+        ### sudo -u build chmod +x /home/build/openwrt_workflow/build.sh 
+        ### sudo -u build /home/build/openwrt_workflow/build.sh 
 
         sudo -u build echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall" >> feeds.conf.default
         apt-get update
@@ -34,11 +34,14 @@ jobs:
 
         sudo -u build ./scripts/feeds update -a
 
-        sudo -u build cp -r /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2/luci-app-passwall/ /home/build/openwrt/feeds/passwall/
+        ### sudo -u build cp -r /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2/luci-app-passwall/ /home/build/openwrt/feeds/passwall/
+        git clone https://github.com/xiaorouji/openwrt-passwall2.git $VOLUME_HOME/openwrt-passwall2
+        cp -r $VOLUME_HOME/openwrt-passwall2/luci-app-passwall2 /home/build/openwrt/feeds/passwall/ 
+        chown -R build:build /home/build/ 
         sudo -u build ./scripts/feeds update -a
-        sudo -u build ./scripts/feeds install luci-app-passwall
+        sudo -u build ./scripts/feeds install luci-app-passwall2
         sudo -u build make defconfig
-        sudo -u build make package/luci-app-passwall/compile V=99 -j $(nproc)
+        sudo -u build make package/luci-app-passwall2/compile V=99 -j $(nproc)
 
         pushd bin/packages/x86_64
         tar zcvf passwall.tar.gz passwall/
