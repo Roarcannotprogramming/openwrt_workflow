@@ -146,7 +146,7 @@ jobs:
         profile: generic
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
                   luci-i18n-base-zh-cn netdata luci-theme-argon 
-                  # samba4-server luci-app-samba4 
+                  ### samba4-server luci-app-samba4 
                   luci-app-ttyd ntpclient luci-app-ntpc pciutils vim python3 python3-yaml sudo
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd open-vm-tools -dnsmasq
                   luci-app-passwall2 luci-i18n-passwall2-zh-cn shadowsocksr-libev-ssr-check
