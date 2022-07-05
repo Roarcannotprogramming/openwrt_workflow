@@ -1,0 +1,182 @@
+name: build_image_22.03
+on: workflow_dispatch
+
+jobs:
+  build_passwall:
+    name: Build Passwall
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/sdk:x86-64-22.03-SNAPSHOT
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    # - uses: actions/checkout@v3
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        ### cp -r $VOLUME_HOME /home/build/openwrt_workflow 
+        ### wget https://github.com/xiaorouji/openwrt-passwall/archive/3aff3af88536227d12fb7206992af64ff21cf4d2.zip -O /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip 
+        ### cd /home/build/openwrt_workflow 
+        ### unzip -o openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip
+        ### chown -R build:build /home/build/openwrt_workflow 
+        cd /home/build/openwrt 
+
+        ### sudo -u build chmod +x /home/build/openwrt_workflow/build.sh 
+        ### sudo -u build /home/build/openwrt_workflow/build.sh 
+
+        sudo -u build echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall" >> feeds.conf.default
+        apt-get update
+        apt-get install upx -y
+        sudo -u build ln -s /usr/bin/upx staging_dir/host/bin/upx
+        sudo -u build ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
+
+        sudo -u build ./scripts/feeds update -a
+
+        ### sudo -u build cp -r /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2/luci-app-passwall/ /home/build/openwrt/feeds/passwall/
+        git clone https://github.com/xiaorouji/openwrt-passwall2.git $VOLUME_HOME/openwrt-passwall2
+        cp -r $VOLUME_HOME/openwrt-passwall2/luci-app-passwall2 /home/build/openwrt/feeds/passwall/ 
+        chown -R build:build /home/build/ 
+        sudo -u build ./scripts/feeds update -a
+        sudo -u build ./scripts/feeds install luci-app-passwall2
+        sudo -u build make defconfig
+        sudo -u build make package/luci-app-passwall2/compile V=99 -j $(nproc)
+
+        pushd bin/packages/x86_64
+        tar zcvf passwall.tar.gz passwall/
+        popd
+
+        cp bin/packages/x86_64/passwall.tar.gz $VOLUME_HOME
+    - uses: actions/upload-artifact@v3
+      with:
+        name: passwall
+        path: passwall.tar.gz 
+
+  build_theme_argon:
+    name: Build Argon 
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/sdk:x86-64-22.03-SNAPSHOT
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt 
+        sudo -u build git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+        sudo -u build ./scripts/feeds update -a
+        sudo -u build make defconfig
+        sudo -u build make package/luci-theme-argon/compile V=s -j1
+        tar zcvf $VOLUME_HOME/luci-theme-argon.tar.gz bin/packages/x86_64/base/luci-theme-argon_2.2.9.4_all.ipk
+    - uses: actions/upload-artifact@v3
+      with:
+        name: luci-theme-argon
+        path: luci-theme-argon.tar.gz 
+  
+  # luci app netdata has some bugs, so just not use it for now!
+  build_luci_app_netdata:
+    name: Build Luci App Netdata 
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/sdk:x86-64-22.03-SNAPSHOT
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt 
+        sudo -u build git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
+        sudo -u build ./scripts/feeds update -a
+        sudo -u build ./scripts/feeds install -a
+        sudo -u build make defconfig
+        sudo -u build make package/luci-app-netdata/compile V=s -j1
+        tar zcvf $VOLUME_HOME/luci-app-netdata.tar.gz bin/packages/x86_64/base/luci-app-netdata*.ipk
+    - uses: actions/upload-artifact@v3
+      with:
+        name: luci-app-netdata
+        path: luci-app-netdata.tar.gz 
+
+  build_image:
+    name: Build Image
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrtorg/imagebuilder:x86-64-22.03-SNAPSHOT
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: passwall
+    - uses: actions/download-artifact@v3
+      with:
+        name: luci-theme-argon
+    - uses: actions/download-artifact@v3
+      with:
+        name: luci-app-netdata
+    - name: Prepare Passwall
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt
+        mv $VOLUME_HOME/passwall.tar.gz packages
+        pushd packages
+        tar zxvf passwall.tar.gz
+        rm passwall.tar.gz
+        popd
+    - name: Prepare Argon
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt
+        mv $VOLUME_HOME/luci-theme-argon.tar.gz packages
+        pushd packages
+        tar zxvf luci-theme-argon.tar.gz
+        rm luci-theme-argon.tar.gz
+        popd
+    - name: Prepare Netdata
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt
+        mv $VOLUME_HOME/luci-app-netdata.tar.gz packages
+        pushd packages
+        tar zxvf luci-app-netdata.tar.gz
+        rm luci-app-netdata.tar.gz
+        popd
+    - name: Debug Print
+      run: |
+        ls -alh /home/build/openwrt/packages
+    - name: Make Image
+      run: |
+        export VOLUME_HOME=$(pwd)
+        cd /home/build/openwrt
+        chown -R build:build packages
+        sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
+        sudo -u build make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }}"
+        cd bin/targets/x86/64/ 
+        tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
+      env:
+        rootfs_size: 1024
+        kernel_size: 256
+        profile: generic
+        packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
+                  luci-i18n-base-zh-cn netdata luci-theme-argon samba4-server luci-app-samba4 
+                  luci-app-ttyd ntpclient luci-app-ntpc pciutils vim python3 python3-yaml sudo
+                  coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd open-vm-tools -dnsmasq
+                  luci-app-passwall2 luci-i18n-passwall2-zh-cn shadowsocksr-libev-ssr-check
+                  shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat shadowsocksr-libev-ssr-redir
+                  shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs tcping v2ray-geoip v2ray-geosite
+                  v2ray-plugin
+    - uses: actions/upload-artifact@v3
+      with:
+          name: openwrt
+          path: openwrt-x86-64-master.tar.gz
