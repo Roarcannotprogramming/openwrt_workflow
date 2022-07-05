@@ -127,16 +127,22 @@ jobs:
       run: |
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
+        ls -alh $VOLUME_HOME
+        ls -alh $VOLUME_HOME/passwall
         cp -r $VOLUME_HOME/passwall packages
     - name: Prepare Argon
       run: |
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
+        ls -alh $VOLUME_HOME
+        ls -alh $VOLUME_HOME/luci-theme-argon
         cp -r $VOLUME_HOME/luci-theme-argon packages
     - name: Prepare Netdata
       run: |
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
+        ls -alh $VOLUME_HOME
+        ls -alh $VOLUME_HOME/luci-theme-argon
         cp -r $VOLUME_HOME/luci-app-netdata packages
     - name: Debug Print
       run: |
