@@ -123,27 +123,6 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: luci-app-netdata
-#    - name: Prepare Passwall
-#      run: |
-#        export VOLUME_HOME=$(pwd)
-#        cd /home/build/openwrt
-#        ls -alh $VOLUME_HOME
-#        ls -alh $VOLUME_HOME/passwall
-#        cp -r $VOLUME_HOME/passwall packages
-#    - name: Prepare Argon
-#      run: |
-#        export VOLUME_HOME=$(pwd)
-#        cd /home/build/openwrt
-#        ls -alh $VOLUME_HOME
-#        ls -alh $VOLUME_HOME/luci-theme-argon
-#        cp -r $VOLUME_HOME/luci-theme-argon packages
-#    - name: Prepare Netdata
-#      run: |
-#        export VOLUME_HOME=$(pwd)
-#        cd /home/build/openwrt
-#        ls -alh $VOLUME_HOME
-#        ls -alh $VOLUME_HOME/luci-theme-argon
-#        cp -r $VOLUME_HOME/luci-app-netdata packages
     - name: Prepare Packages
       run: |
         export VOLUME_HOME=$(pwd)
@@ -166,7 +145,8 @@ jobs:
         kernel_size: 256
         profile: generic
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
-                  luci-i18n-base-zh-cn netdata luci-theme-argon samba4-server luci-app-samba4 
+                  luci-i18n-base-zh-cn netdata luci-theme-argon 
+                  # samba4-server luci-app-samba4 
                   luci-app-ttyd ntpclient luci-app-ntpc pciutils vim python3 python3-yaml sudo
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd open-vm-tools -dnsmasq
                   luci-app-passwall2 luci-i18n-passwall2-zh-cn shadowsocksr-libev-ssr-check
