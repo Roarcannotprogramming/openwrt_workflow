@@ -43,15 +43,15 @@ jobs:
         sudo -u build make defconfig
         sudo -u build make package/luci-app-passwall2/compile V=99 -j $(nproc)
 
-        pushd bin/packages/x86_64
-        tar zcvf passwall.tar.gz passwall/
-        popd
+        # pushd bin/packages/x86_64
+        # tar zcvf passwall.tar.gz passwall/
+        # popd
 
-        cp bin/packages/x86_64/passwall.tar.gz $VOLUME_HOME
+        cp -r bin/packages/x86_64/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
       with:
         name: passwall
-        path: passwall.tar.gz 
+        path: passwall 
 
   build_theme_argon:
     name: Build Argon 
@@ -72,11 +72,13 @@ jobs:
         sudo -u build ./scripts/feeds update -a
         sudo -u build make defconfig
         sudo -u build make package/luci-theme-argon/compile V=s -j1
-        tar zcvf $VOLUME_HOME/luci-theme-argon.tar.gz bin/packages/x86_64/base/luci-theme-argon_2.2.9.4_all.ipk
+        # tar zcvf $VOLUME_HOME/luci-theme-argon.tar.gz bin/packages/x86_64/base/luci-theme-argon_2.2.9.4_all.ipk
+        mkdir -p $VOLUME_HOME/luci-theme-argon
+        cp bin/packages/x86_64/base/luci-theme-argon*.ipk $VOLUME_HOME/luci-theme-argon/ 
     - uses: actions/upload-artifact@v3
       with:
         name: luci-theme-argon
-        path: luci-theme-argon.tar.gz 
+        path: luci-theme-argon 
   
   # luci app netdata has some bugs, so just not use it for now!
   build_luci_app_netdata:
@@ -99,11 +101,13 @@ jobs:
         sudo -u build ./scripts/feeds install -a
         sudo -u build make defconfig
         sudo -u build make package/luci-app-netdata/compile V=s -j1
-        tar zcvf $VOLUME_HOME/luci-app-netdata.tar.gz bin/packages/x86_64/base/luci-app-netdata*.ipk
+        # tar zcvf $VOLUME_HOME/luci-app-netdata.tar.gz bin/packages/x86_64/base/luci-app-netdata*.ipk
+        mkdir -p $VOLUME_HOME/luci-app-netdata
+        cp bin/packages/x86_64/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
     - uses: actions/upload-artifact@v3
       with:
         name: luci-app-netdata
-        path: luci-app-netdata.tar.gz 
+        path: luci-app-netdata 
 
   build_image:
     name: Build Image
@@ -129,29 +133,32 @@ jobs:
       run: |
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
-        mv $VOLUME_HOME/passwall.tar.gz packages
-        pushd packages
-        tar zxvf passwall.tar.gz
-        rm passwall.tar.gz
-        popd
+        # mv $VOLUME_HOME/passwall.tar.gz packages
+        # pushd packages
+        # tar zxvf passwall.tar.gz
+        # rm passwall.tar.gz
+        # popd
+        cp -r $VOLUME_HOME/passwall packages
     - name: Prepare Argon
       run: |
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
-        mv $VOLUME_HOME/luci-theme-argon.tar.gz packages
-        pushd packages
-        tar zxvf luci-theme-argon.tar.gz
-        rm luci-theme-argon.tar.gz
-        popd
+        # mv $VOLUME_HOME/luci-theme-argon.tar.gz packages
+        # pushd packages
+        # tar zxvf luci-theme-argon.tar.gz
+        # rm luci-theme-argon.tar.gz
+        # popd
+        cp -r $VOLUME_HOME/luci-theme-argon packages
     - name: Prepare Netdata
       run: |
         export VOLUME_HOME=$(pwd)
         cd /home/build/openwrt
-        mv $VOLUME_HOME/luci-app-netdata.tar.gz packages
-        pushd packages
-        tar zxvf luci-app-netdata.tar.gz
-        rm luci-app-netdata.tar.gz
-        popd
+        # mv $VOLUME_HOME/luci-app-netdata.tar.gz packages
+        # pushd packages
+        # tar zxvf luci-app-netdata.tar.gz
+        # rm luci-app-netdata.tar.gz
+        # popd
+        cp -r $VOLUME_HOME/luci-app-netdata packages
     - name: Debug Print
       run: |
         ls -alh /home/build/openwrt/packages
@@ -162,8 +169,10 @@ jobs:
         chown -R build:build packages
         sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
         sudo -u build make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }}"
-        cd bin/targets/x86/64/ 
-        tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
+        # cd bin/targets/x86/64/ 
+        # tar zcvf $VOLUME_HOME/openwrt-x86-64-master.tar.gz *
+        mkdir -p $VOLUME_HOME/openwrt-x86-64-master
+        cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-x86-64-master/
       env:
         rootfs_size: 1024
         kernel_size: 256
@@ -179,4 +188,4 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
-          path: openwrt-x86-64-master.tar.gz
+          path: openwrt-x86-64-master
