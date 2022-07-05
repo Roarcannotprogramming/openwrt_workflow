@@ -143,7 +143,7 @@ jobs:
 
       ### samba4-server luci-app-samba4 
       env:
-        rootfs_size: 1024
+        rootfs_size: 4096
         kernel_size: 256
         profile: generic
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
