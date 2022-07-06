@@ -153,7 +153,7 @@ jobs:
                   luci-app-passwall2 luci-i18n-passwall2-zh-cn shadowsocksr-libev-ssr-check
                   shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat shadowsocksr-libev-ssr-redir
                   shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs tcping v2ray-geoip v2ray-geosite
-                  v2ray-plugin docker dockerd
+                  v2ray-plugin docker dockerd ipset
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
