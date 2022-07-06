@@ -141,7 +141,7 @@ jobs:
         mkdir -p $VOLUME_HOME/openwrt-x86-64-master
         cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-x86-64-master/
 
-      ### samba4-server luci-app-samba4 
+       
       env:
         rootfs_size: 4096
         kernel_size: 256
@@ -153,7 +153,7 @@ jobs:
                   luci-app-passwall2 luci-i18n-passwall2-zh-cn shadowsocksr-libev-ssr-check
                   shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat shadowsocksr-libev-ssr-redir
                   shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs tcping v2ray-geoip v2ray-geosite
-                  v2ray-plugin docker dockerd ipset
+                  v2ray-plugin docker dockerd ipset samba4-server luci-app-samba4 openvpn-openssl luci-app-openvpn
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
