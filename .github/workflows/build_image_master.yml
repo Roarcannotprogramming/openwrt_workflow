@@ -151,12 +151,12 @@ jobs:
                   luci-i18n-base-zh-cn netdata luci-app-ttyd ntpclient luci-app-ntpc pciutils
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
                   vim python3 python3-yaml sudo docker dockerd ipset samba4-server luci-app-samba4 
-                  openvpn-openssl luci-app-openvpn lsof
+                  openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk
                   luci-theme-argon
                   chinadns-ng dns2socks dns2tcp luci-app-passwall luci-i18n-passwall-zh-cn microsocks
                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
                   shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs
-                  tcping trojan-plus v2ray-core v2ray-example v2ray-extra v2ray-plugin
+                  tcping trojan-plus v2ray-core v2ray-example v2ray-extra v2ray-plugin 
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
