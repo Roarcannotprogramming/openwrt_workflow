@@ -126,7 +126,9 @@ jobs:
         cp -r $VOLUME_HOME packages
     - name: Debug Print
       run: |
-        ls -alh /home/build/openwrt/packages
+        apt update
+        apt install tree
+        tree /home/build/openwrt/packages
     - name: Make Image
       run: |
         export VOLUME_HOME=$(pwd)
