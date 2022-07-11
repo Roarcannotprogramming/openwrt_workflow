@@ -1,5 +1,5 @@
 name: BuildImage-x86-64-master
-on: workflow_dispatch
+on: [workflow_dispatch, push]
 
 jobs:
   build_passwall:
