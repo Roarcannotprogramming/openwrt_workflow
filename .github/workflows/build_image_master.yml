@@ -1,5 +1,9 @@
 name: BuildImage-x86-64-master
-on: [workflow_dispatch, push]
+on: 
+  workflow_dispatch
+  push
+  schedule:
+    cron: "0 21 * * *"
 
 jobs:
   build_passwall:
