@@ -25,6 +25,7 @@ jobs:
         ### cd /home/build/openwrt_workflow 
         ### unzip -o openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2.zip
         ### chown -R build:build /home/build/openwrt_workflow 
+        sudo su -
         cd /home/build/openwrt 
         ### sudo -u build chmod +x /home/build/openwrt_workflow/build.sh 
         ### sudo -u build /home/build/openwrt_workflow/build.sh 
@@ -36,12 +37,15 @@ jobs:
         sudo -u build ./scripts/feeds update -a
         ### sudo -u build cp -r /home/build/openwrt_workflow/openwrt-passwall-3aff3af88536227d12fb7206992af64ff21cf4d2/luci-app-passwall/ /home/build/openwrt/feeds/passwall/
         # git clone https://github.com/xiaorouji/openwrt-passwall2.git $VOLUME_HOME/openwrt-passwall2
-        git clone -b luci https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall
-        cp -r $VOLUME_HOME/openwrt-passwall/luci-app-passwall /home/build/openwrt/feeds/passwall/ 
+        git clone -b luci https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-luci
+        git clone -b ss-rust https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-ss-rust
+        cp -r $VOLUME_HOME/openwrt-passwall-luci/luci-app-passwall /home/build/openwrt/feeds/passwall/ 
+        cp -r $VOLUME_HOME/openwrt-passwall-ss-rust/* /home/build/openwrt/feeds/passwall/ 
         chown -R build:build /home/build/ 
         sudo -u build ./scripts/feeds update -a
         sudo -u build ./scripts/feeds install luci-app-passwall
         sudo -u build make defconfig
+        sudo -u build sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" defconfig
         sudo -u build make package/luci-app-passwall/compile V=99 -j $(nproc)
         cp -r bin/packages/x86_64/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
@@ -153,7 +157,7 @@ jobs:
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
                   vim python3 python3-yaml sudo docker dockerd docker-compose ipset samba4-server  
                   openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4
-                  tcpdump zstd tmux bash netcat
+                  tcpdump zstd tmux bash netcat ip6tables iptables ip6tables-mod-nat
 #                   luci-theme-argon
 #                   chinadns-ng dns2socks dns2tcp luci-app-passwall luci-i18n-passwall-zh-cn microsocks
 #                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
