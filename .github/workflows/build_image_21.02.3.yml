@@ -1,4 +1,4 @@
-name: BuildImage-x86-64-master
+name: BuildImage-x86-64-21.02.3
 on: 
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ jobs:
     name: Build Passwall
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/sdk:x86_64-master
+      image: openwrtorg/sdk:x86-64-21.02.3
       options: --user root
     defaults:
       run:
@@ -57,7 +57,7 @@ jobs:
     name: Build Argon 
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/sdk:x86_64-master
+      image: openwrtorg/sdk:x86-64-21.02.3
       options: --user root
     defaults:
       run:
@@ -84,7 +84,7 @@ jobs:
     name: Build Luci App Netdata 
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/sdk:x86_64-master
+      image: openwrtorg/sdk:x86-64-21.02.3
       options: --user root
     defaults:
       run:
@@ -112,7 +112,7 @@ jobs:
     needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/imagebuilder:x86-64-master
+      image: openwrtorg/imagebuilder:x86-64-21.02.3
       options: --user root
     defaults:
       run:
@@ -145,8 +145,8 @@ jobs:
         chown -R build:build packages
         sudo -u build sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
         sudo -u build make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} packages/mypackages/*"
-        mkdir -p $VOLUME_HOME/openwrt-x86-64-master
-        cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-x86-64-master/
+        mkdir -p $VOLUME_HOME/openwrt-x86-64-21.02.3
+        cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-x86-64-21.02.3/
        
       env:
         rootfs_size: 4096
@@ -167,4 +167,4 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
-          path: openwrt-x86-64-master
+          path: openwrt-x86-64-21.02.3
