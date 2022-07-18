@@ -152,7 +152,7 @@ jobs:
         rootfs_size: 4096
         kernel_size: 256
         profile: generic
-        packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e open-vm-tools
+        packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e 
                   luci-i18n-base-zh-cn netdata luci-app-ttyd ntpclient luci-app-ntpc pciutils
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
                   vim python3 python3-yaml sudo docker dockerd docker-compose ipset samba4-server  
@@ -163,6 +163,7 @@ jobs:
 #                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
 #                   shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs
 #                   tcping trojan-plus v2ray-core v2ray-example v2ray-extra v2ray-plugin 
+#                   open-vm-tools
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt
