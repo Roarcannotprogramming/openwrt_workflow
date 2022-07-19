@@ -178,5 +178,5 @@ jobs:
 #                   open-vm-tools
     - uses: actions/upload-artifact@v3
       with:
-          name: openwrt
+          name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
           path: openwrt-${{ matrix.arch }}-${{ matrix.version }}
