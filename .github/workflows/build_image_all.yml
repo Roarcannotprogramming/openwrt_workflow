@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
   schedule:
-    - cron: "0 21 * * *"
+    - cron: "0 5,21 * * *"
 
 # For SDK, the version is x86_64-master, x86_64-openwrt-19.07, x86_64-openwrt-21.02, x86_64-openwrt-22.03
 # For ImageBuilder: the version is x86-64-master, x86-64-openwrt-19.07, x86-64-openwrt-21.02, x86-64-openwrt-22.03
