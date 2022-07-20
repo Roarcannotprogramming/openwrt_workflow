@@ -11,6 +11,7 @@ on:
 jobs:
   build_passwall:
     strategy:
+      fail-fast: false
       matrix:
         version: [master, openwrt-21.02, openwrt-22.03]
         arch: [x86_64]
@@ -53,6 +54,7 @@ jobs:
 
   build_theme_argon:
     strategy:
+      fail-fast: false
       matrix:
         version: [master, openwrt-21.02, openwrt-22.03]
         arch: [x86_64]
@@ -84,6 +86,7 @@ jobs:
   # luci app netdata has some bugs, so just not use it for now!
   build_luci_app_netdata:
     strategy:
+      fail-fast: false
       matrix:
         version: [master, openwrt-21.02, openwrt-22.03]
         arch: [x86_64]
@@ -115,6 +118,7 @@ jobs:
 
   build_image:
     strategy:
+      fail-fast: false
       matrix:
         version: [master, openwrt-21.02, openwrt-22.03]
         arch: [x86-64]
