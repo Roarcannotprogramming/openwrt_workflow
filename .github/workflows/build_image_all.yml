@@ -10,6 +10,7 @@ on:
 
 jobs:
   build_passwall:
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -53,6 +54,7 @@ jobs:
         path: passwall 
 
   build_theme_argon:
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -85,6 +87,7 @@ jobs:
   
   # luci app netdata has some bugs, so just not use it for now!
   build_luci_app_netdata:
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -117,6 +120,7 @@ jobs:
         path: luci-app-netdata 
 
   build_image:
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
