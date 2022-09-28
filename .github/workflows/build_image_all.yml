@@ -37,9 +37,9 @@ jobs:
         sudo -u build ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
         sudo -u build ./scripts/feeds update -a
         git clone -b luci https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-luci
-        git clone -b ss-rust https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-ss-rust
+        # git clone -b ss-rust https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-ss-rust
         cp -r $VOLUME_HOME/openwrt-passwall-luci/luci-app-passwall /home/build/openwrt/feeds/passwall/ 
-        cp -r $VOLUME_HOME/openwrt-passwall-ss-rust/* /home/build/openwrt/feeds/passwall/ 
+        # cp -r $VOLUME_HOME/openwrt-passwall-ss-rust/* /home/build/openwrt/feeds/passwall/ 
         chown -R build:build /home/build/ 
         sudo -u build ./scripts/feeds update -a
         sudo -u build ./scripts/feeds install luci-app-passwall
