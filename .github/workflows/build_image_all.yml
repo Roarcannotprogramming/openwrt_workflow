@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, openwrt-21.02, openwrt-22.03]
+        version: [master, openwrt-22.03]
         arch: [x86_64]
     name: Build Passwall for OpenWRT-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -45,12 +45,6 @@ jobs:
         sudo -u build ./scripts/feeds install luci-app-passwall
         sudo -u build make defconfig
         sudo -u build sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
-
-        # for 21.02 build env, we need to disable go module
-        if [ "${{ matrix.version }}" = "openwrt-21.02" ]; then
-           go env -w GO111MODULE=off
-        fi
-
         sudo -u build make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
         cp -r bin/packages/x86_64/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
@@ -62,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, openwrt-21.02, openwrt-22.03]
+        version: [master, openwrt-22.03]
         arch: [x86_64]
     name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -94,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, openwrt-21.02, openwrt-22.03]
+        version: [master, openwrt-22.03]
         arch: [x86_64]
     name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }} 
     runs-on: ubuntu-latest
@@ -126,7 +120,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, openwrt-21.02, openwrt-22.03]
+        version: [master, openwrt-22.03]
         arch: [x86-64]
     if: ${{ always() }}
     needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
