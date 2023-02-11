@@ -173,7 +173,7 @@ jobs:
                   vim python3 python3-yaml sudo docker dockerd docker-compose ipset samba4-server  
                   openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4
                   tcpdump zstd tmux bash netcat ip6tables-mod-nat iptables-mod-tproxy dnsmasq-full hostapd 
-                  wpa-supplicant
+                  wpa-supplicant xl2tpd
 #                   luci-theme-argon
 #                   chinadns-ng dns2socks dns2tcp luci-app-passwall luci-i18n-passwall-zh-cn microsocks
 #                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
