@@ -52,7 +52,7 @@ jobs:
         cp -r bin/packages/x86_64/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
       with:
-        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
+        name: passwall-x86_64-${{ matrix.version }}
         path: passwall 
 
   build_theme_argon:
@@ -86,7 +86,7 @@ jobs:
         cp bin/packages/x86_64/base/luci-theme-argon*.ipk $VOLUME_HOME/luci-theme-argon/ 
     - uses: actions/upload-artifact@v3
       with:
-        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+        name: luci-theme-argon-x86_64-${{ matrix.version }}
         path: luci-theme-argon 
   
   # luci app netdata has some bugs, so just not use it for now!
@@ -122,7 +122,7 @@ jobs:
         cp bin/packages/x86_64/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
     - uses: actions/upload-artifact@v3
       with:
-        name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
+        name: luci-app-netdata-x86_64-${{ matrix.version }}
         path: luci-app-netdata 
 
   build_image:
