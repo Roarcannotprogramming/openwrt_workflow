@@ -18,7 +18,7 @@ jobs:
     name: Build Passwall for OpenWRT-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
       options: --user root
     defaults:
       run:
@@ -61,7 +61,7 @@ jobs:
     name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
       options: --user root
     defaults:
       run:
@@ -93,7 +93,7 @@ jobs:
     name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }} 
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
       options: --user root
     defaults:
       run:
@@ -127,7 +127,7 @@ jobs:
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
-      image: openwrtorg/imagebuilder:${{ matrix.arch }}-${{ matrix.version }}
+      image: openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }}
       options: --user root
     defaults:
       run:
