@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Delete old run IDs
         run: |
-          echo ${{ env.OLD_IDS }}
+          echo "${{ env.OLD_IDS }}"
           # echo ${{ env.OLD_IDS }} | while read -r id; do
           #   curl -L \
           #     -X DELETE \
