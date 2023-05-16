@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      actions: write
     steps:
       - name: Get old run IDs
         run: |
