@@ -6,7 +6,7 @@ on:
     - cron: "0 21 * * *"
 
 jobs:
-  get_old_run_ids:
+  get_and_delete_old_run_ids:
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -23,14 +23,6 @@ jobs:
             | jq -r '.workflow_runs[] | select(.created_at < "'$(date -d "-7 day" +%Y-%m-%dT%H:%M:%SZ)'") | .id' >> "$GITHUB_ENV"
           echo "$EOF" >> "$GITHUB_ENV"
 
-          cat "$GITHUB_ENV"
-
-  delete_old_run_ids:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    needs: get_old_run_ids
-    steps:
       - name: Delete old run IDs
         run: |
           echo "${{ env.OLD_IDS }}"
