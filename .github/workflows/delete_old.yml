@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
+    needs: get_old_run_ids
     steps:
       - name: Delete old run IDs
         run: |
