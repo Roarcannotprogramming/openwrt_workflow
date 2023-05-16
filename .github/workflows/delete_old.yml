@@ -26,7 +26,7 @@ jobs:
 
       - name: Delete old run IDs
         run: |
-          echo $OLD_IDS | while read -d ' ' -r id; do
+          echo $OLD_IDS | while read -d ' ' -r id || [[ -n ${id} ]]; do
             # curl -L \
             #   -X DELETE \
             #   -H "Accept: application/vnd.github+json" \
