@@ -12,7 +12,7 @@ jobs:
       actions: read
     steps:
       run: |
-      echo ${{ github.repository_owner }} ${{ github.event.repository.name }} 
+        echo ${{ github.repository_owner }} ${{ github.event.repository.name }} 
 #        curl -L \
 #          -H "Accept: application/vnd.github+json" \
 #          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
@@ -20,12 +20,12 @@ jobs:
 #          https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs \
 #          | jq -r '.workflow_runs[] | select(.created_at < "'$(date -d "-7 day" +%Y-%m-%dT%H:%M:%SZ)'") | .id' \
 
-  delete_run_ids:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      run: |
+#   delete_run_ids:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       actions: write
+#     steps:
+#       run: |
 #         curl -L \
 #           -X DELETE \
 #           -H "Accept: application/vnd.github+json" \
