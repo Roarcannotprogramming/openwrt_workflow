@@ -12,7 +12,8 @@ jobs:
       actions: read
     steps:
       run: |
-        echo ${{ github.repository_owner }} ${{ github.event.repository.name }} 
+        echo ${{ github.repository_owner }}
+        echo ${{ github.event.repository.name }} 
 #        curl -L \
 #          -H "Accept: application/vnd.github+json" \
 #          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
