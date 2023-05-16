@@ -28,24 +28,22 @@ jobs:
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
-        sudo su -
-        cd /home/build/openwrt 
-        sudo -u build echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall" >> feeds.conf.default
-        apt-get update
-        apt-get install upx -y
-        sudo -u build ln -s /usr/bin/upx staging_dir/host/bin/upx
-        sudo -u build ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
-        sudo -u build ./scripts/feeds update -a
+        export BUILD_DIR="/builder"
+        cd $BUILD_DIR 
+        sudo -u buildbot echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall" >> feeds.conf.default
+        ## apt-get update
+        ## apt-get install upx -y
+        ## sudo -u buildbot ln -s /usr/bin/upx staging_dir/host/bin/upx
+        ## sudo -u buildbot ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
+        sudo -u buildbot ./scripts/feeds update -a
         git clone -b luci https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-luci
-        # git clone -b ss-rust https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-ss-rust
-        cp -r $VOLUME_HOME/openwrt-passwall-luci/luci-app-passwall /home/build/openwrt/feeds/passwall/ 
-        # cp -r $VOLUME_HOME/openwrt-passwall-ss-rust/* /home/build/openwrt/feeds/passwall/ 
-        chown -R build:build /home/build/ 
-        sudo -u build ./scripts/feeds update -a
-        sudo -u build ./scripts/feeds install luci-app-passwall
-        sudo -u build make defconfig
-        sudo -u build sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
-        sudo -u build make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
+        cp -r $VOLUME_HOME/openwrt-passwall-luci/luci-app-passwall $BUILD_DIR/feeds/passwall/ 
+        chown -R build:build $BUILD_DIR 
+        sudo -u buildbot ./scripts/feeds update -a
+        sudo -u buildbot ./scripts/feeds install luci-app-passwall
+        sudo -u buildbot make defconfig
+        sudo -u buildbot sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
+        sudo -u buildbot make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
         cp -r bin/packages/x86_64/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
       with:
