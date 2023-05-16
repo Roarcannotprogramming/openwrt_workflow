@@ -29,22 +29,23 @@ jobs:
       run: |
         export VOLUME_HOME=$(pwd)
         export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
         cd $BUILD_DIR 
         apt-get update
-        apt install sudo
-        sudo -u buildbot echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall" >> feeds.conf.default
+        apt install sudo -y
+        sudo -u $BUILDER echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall" >> feeds.conf.default
         ## apt-get install upx -y
-        ## sudo -u buildbot ln -s /usr/bin/upx staging_dir/host/bin/upx
-        ## sudo -u buildbot ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
-        sudo -u buildbot ./scripts/feeds update -a
+        ## sudo -u $BUILDER ln -s /usr/bin/upx staging_dir/host/bin/upx
+        ## sudo -u $BUILDER ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
+        sudo -u $BUILDER ./scripts/feeds update -a
         git clone -b luci https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-luci
         cp -r $VOLUME_HOME/openwrt-passwall-luci/luci-app-passwall $BUILD_DIR/feeds/passwall/ 
-        chown -R build:build $BUILD_DIR 
-        sudo -u buildbot ./scripts/feeds update -a
-        sudo -u buildbot ./scripts/feeds install luci-app-passwall
-        sudo -u buildbot make defconfig
-        sudo -u buildbot sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
-        sudo -u buildbot make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
+        chown -R $BUILDER:$BUILDER $BUILD_DIR 
+        sudo -u $BUILDER ./scripts/feeds update -a
+        sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
+        sudo -u $BUILDER make defconfig
+        sudo -u $BUILDER sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
+        sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
         cp -r bin/packages/x86_64/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
       with:
