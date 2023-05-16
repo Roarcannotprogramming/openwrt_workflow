@@ -74,6 +74,8 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         cd $BUILD_DIR 
+        apt-get update
+        apt install sudo -y
         sudo -u $BUILDER git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
         sudo -u $BUILDER ./scripts/feeds update -a
         sudo -u $BUILDER make defconfig
@@ -108,6 +110,8 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         cd $BUILD_DIR 
+        apt-get update
+        apt install sudo -y
         sudo -u $BUILDER git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
         sudo -u $BUILDER ./scripts/feeds update -a
         sudo -u $BUILDER ./scripts/feeds install -a
@@ -160,7 +164,7 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         apt update
-        apt install tree
+        apt install tree sudo -y
         tree $BUILD_DIR/packages
     - name: Make Image
       run: |
