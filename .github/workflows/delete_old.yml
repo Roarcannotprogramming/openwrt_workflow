@@ -9,7 +9,7 @@ jobs:
   get_and_delete_old_run_ids:
     runs-on: ubuntu-latest
     permissions:
-      actions: read|write
+      actions: write
     steps:
       - name: Get old run IDs
         run: |
