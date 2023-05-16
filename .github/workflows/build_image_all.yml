@@ -1,7 +1,7 @@
 name: BuildImage-x86-64-all
 on: 
   workflow_dispatch:
-  push:
+#   push:
   schedule:
     - cron: "0 21 * * *"
 
