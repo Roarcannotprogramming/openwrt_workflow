@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, 22.03-SNAPSHOT, 22.03.5]
+        version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64]
     name: Build Passwall for OpenWRT-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, 22.03-SNAPSHOT, 22.03.5]
+        version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64]
     name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, 22.03-SNAPSHOT, 22.03.5]
+        version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64]
     name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }} 
     runs-on: ubuntu-latest
@@ -128,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, 22.03-SNAPSHOT, 22.03.5]
+        version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64]
     if: ${{ always() }}
     needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
