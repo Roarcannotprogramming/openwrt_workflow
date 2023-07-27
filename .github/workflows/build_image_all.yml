@@ -204,7 +204,6 @@ jobs:
 # Copied from https://github.com/DHDAXCW/NanoPi-R2S-rk3328
     - name: Generate release tag
       id: tag
-      if: !cancelled()
       run: |
           echo "release_tag=$(date +"%Y.%m.%d")-Lean1" >> $GITHUB_OUTPUT
           echo "release_date=$(date +"%Y.%m.%d")" >> $GITHUB_OUTPUT
