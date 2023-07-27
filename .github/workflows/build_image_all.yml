@@ -154,7 +154,7 @@ jobs:
         export BUILDER="buildbot"
         cd $BUILD_DIR 
         mkdir -p $BUILD_DIR/packages/mypackages
-        cp -r $VOLUME_HOME/* packages/mypackages/
+        # cp -r $VOLUME_HOME/* packages/mypackages/
     - name: Debug Print
       run: |
         export VOLUME_HOME=$(pwd)
