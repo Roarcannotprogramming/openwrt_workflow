@@ -128,7 +128,7 @@ jobs:
         version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64, rockchip-armv8]
     if: ${{ always() }}
-    needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
+    # needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
@@ -138,12 +138,12 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/download-artifact@v3
-      with:
-        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v3
-      with:
-        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+    # - uses: actions/download-artifact@v3
+    #   with:
+    #     name: passwall-${{ matrix.arch }}-${{ matrix.version }}
+    # - uses: actions/download-artifact@v3
+    #   with:
+    #     name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v3
     #   with:
     #     name: luci-app-netdata
@@ -163,6 +163,14 @@ jobs:
         apt update
         apt install tree sudo -y
         tree $BUILD_DIR/packages
+
+    - name: Set profile
+      run: |
+        if ${{ matrix.arch == 'x86-64' }}; then
+          echo "profile=generic" >> $GITHUB_ENV
+        elif ${{ matrix.arch == 'rockchip-armv8' }}; then
+          echo "profile=friendlyarm_nanopi-r2s" >> $GITHUB_ENV
+        fi
     - name: Make Image
       run: |
         export VOLUME_HOME=$(pwd)
@@ -171,6 +179,7 @@ jobs:
         cd $BUILD_DIR 
         chown -R $BUILDER:$BUILDER packages
         sudo -u $BUILDER sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
+        echo ${{ env.profile }}
         sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} packages/mypackages/*"
         mkdir -p $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}
         tree bin/targets
@@ -179,7 +188,6 @@ jobs:
       env:
         rootfs_size: 4096
         kernel_size: 256
-        profile: generic
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e 
                   luci-i18n-base-zh-cn netdata luci-app-ttyd ntpclient luci-app-ntpc pciutils
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
