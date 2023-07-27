@@ -15,7 +15,7 @@ jobs:
       matrix:
         version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64, rockchip-armv8]
-    name: Build Passwall for OpenWRT-${{ matrix.version }}
+    name: Build Passwall for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
       image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
@@ -200,3 +200,40 @@ jobs:
       with:
           name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
           path: openwrt-${{ matrix.arch }}-${{ matrix.version }}
+
+# Copied from https://github.com/DHDAXCW/NanoPi-R2S-rk3328
+    - name: Generate release tag
+      id: tag
+      if: !cancelled()
+      run: |
+          echo "release_tag=$(date +"%Y.%m.%d")-Lean1" >> $GITHUB_OUTPUT
+          echo "release_date=$(date +"%Y.%m.%d")" >> $GITHUB_OUTPUT
+          touch release.txt
+          echo "deprecated" >> release.txt
+          echo "status=success" >> $GITHUB_OUTPUT
+        
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+          name: ${{ steps.tag.outputs.release_date }} OpenWrt
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          body_path: release.txt
+          files: openwrt-*
+
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+          retain_days: 7
+          keep_minimum_runs: 7
+
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.2.1
+      if: !cancelled()
+      with:
+          keep_latest: 7
+          delete_tags: true
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
