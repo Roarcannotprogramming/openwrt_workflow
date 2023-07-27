@@ -5,9 +5,6 @@ on:
   schedule:
     - cron: "0 21 * * *"
 
-# For SDK, the version is x86_64-master, x86_64-openwrt-19.07, x86_64-openwrt-21.02, x86_64-openwrt-22.03
-# For ImageBuilder: the version is x86-64-master, x86-64-openwrt-19.07, x86-64-openwrt-21.02, x86-64-openwrt-22.03
-
 jobs:
   build_passwall:
     strategy:
@@ -143,10 +140,10 @@ jobs:
     steps:
     - uses: actions/download-artifact@v3
       with:
-        name: passwall-x86_64-${{ matrix.version }}
+        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
     - uses: actions/download-artifact@v3
       with:
-        name: luci-theme-argon-x86_64-${{ matrix.version }}
+        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v3
     #   with:
     #     name: luci-app-netdata
