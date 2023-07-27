@@ -180,7 +180,7 @@ jobs:
         chown -R $BUILDER:$BUILDER packages
         sudo -u $BUILDER sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
         echo ${{ env.profile }}
-        sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} packages/mypackages/*"
+        sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} # packages/mypackages/*"
         mkdir -p $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}
         tree bin/targets
         cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
