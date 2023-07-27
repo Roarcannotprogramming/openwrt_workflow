@@ -1,4 +1,4 @@
-name: BuildImage-x86-64-all
+name: BuildImage-all
 on: 
   workflow_dispatch:
   push:
@@ -46,10 +46,10 @@ jobs:
         sudo -u $BUILDER make defconfig
         sudo -u $BUILDER sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
         sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
-        cp -r bin/packages/x86_64/passwall $VOLUME_HOME
+        cp -r bin/packages/*/passwall $VOLUME_HOME
     - uses: actions/upload-artifact@v3
       with:
-        name: passwall-x86_64-${{ matrix.version }}
+        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
         path: passwall 
 
   build_theme_argon:
@@ -81,10 +81,10 @@ jobs:
         sudo -u $BUILDER make defconfig
         sudo -u $BUILDER make package/luci-theme-argon/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-theme-argon
-        cp bin/packages/x86_64/base/luci-theme-argon*.ipk $VOLUME_HOME/luci-theme-argon/ 
+        cp bin/packages/*/base/luci-theme-argon*.ipk $VOLUME_HOME/luci-theme-argon/ 
     - uses: actions/upload-artifact@v3
       with:
-        name: luci-theme-argon-x86_64-${{ matrix.version }}
+        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-theme-argon 
   
   # luci app netdata has some bugs, so just not use it for now!
@@ -118,10 +118,10 @@ jobs:
         sudo -u $BUILDER make defconfig
         sudo -u $BUILDER make package/luci-app-netdata/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-app-netdata
-        cp bin/packages/x86_64/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
+        cp bin/packages/*/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
     - uses: actions/upload-artifact@v3
       with:
-        name: luci-app-netdata-x86_64-${{ matrix.version }}
+        name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-app-netdata 
 
   build_image:
@@ -176,6 +176,7 @@ jobs:
         sudo -u $BUILDER sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
         sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} packages/mypackages/*"
         mkdir -p $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}
+        tree bin/targets
         cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
        
       env:
