@@ -128,7 +128,7 @@ jobs:
         version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64, rockchip-armv8]
     if: ${{ always() }}
-    # needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
@@ -138,12 +138,12 @@ jobs:
       run:
         shell: bash
     steps:
-    # - uses: actions/download-artifact@v3
-    #   with:
-    #     name: passwall-${{ matrix.arch }}-${{ matrix.version }}
-    # - uses: actions/download-artifact@v3
-    #   with:
-    #     name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v3
     #   with:
     #     name: luci-app-netdata
@@ -154,7 +154,7 @@ jobs:
         export BUILDER="buildbot"
         cd $BUILD_DIR 
         mkdir -p $BUILD_DIR/packages/mypackages
-        # cp -r $VOLUME_HOME/* packages/mypackages/
+        cp -r $VOLUME_HOME/* packages/mypackages/
     - name: Debug Print
       run: |
         export VOLUME_HOME=$(pwd)
@@ -180,10 +180,14 @@ jobs:
         chown -R $BUILDER:$BUILDER packages
         sudo -u $BUILDER sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
         echo ${{ env.profile }}
-        sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} # packages/mypackages/*"
+        sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} packages/mypackages/*"
         mkdir -p $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}
         tree bin/targets
-        cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
+        if ${{ matrix.arch == 'x86-64' }}; then
+          cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
+        elif ${{ matrix.arch == 'rockchip-armv8' }}; then
+          cp bin/targets/rockchip/armv8/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
+        fi
        
       env:
         rootfs_size: 4096
