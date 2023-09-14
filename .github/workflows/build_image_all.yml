@@ -35,7 +35,7 @@ jobs:
         ## sudo -u $BUILDER ln -s /usr/bin/upx staging_dir/host/bin/upx
         ## sudo -u $BUILDER ln -s /usr/bin/upx-ucl staging_dir/host/bin/upx-ucl
         sudo -u $BUILDER ./scripts/feeds update -a
-        git clone -b luci https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-luci
+        git clone -b luci-smartdns-dev https://github.com/xiaorouji/openwrt-passwall.git $VOLUME_HOME/openwrt-passwall-luci
         cp -r $VOLUME_HOME/openwrt-passwall-luci/luci-app-passwall $BUILD_DIR/feeds/passwall/ 
         chown -R $BUILDER:$BUILDER $BUILD_DIR 
         sudo -u $BUILDER ./scripts/feeds update -a
