@@ -56,8 +56,10 @@ jobs:
         sudo -u $BUILDER make defconfig
         sudo -u $BUILDER sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
         sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
-        cp -r bin/packages/*/passwall $VOLUME_HOME
-        cp -r bin/packages/*/passwall_packages/* $VOLUME_HOME/passwall 
+        # cp -r bin/packages/*/passwall $VOLUME_HOME
+        # cp -r bin/packages/*/passwall_packages/* $VOLUME_HOME/passwall 
+        mkdir -p $VOLUME_HOME/passwall
+        cp -r bin/packages $VOLUME_HOME/passwall
 
     - name: Debug Print
       run: |
