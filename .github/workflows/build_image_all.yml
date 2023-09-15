@@ -67,7 +67,7 @@ jobs:
         export PATH=$PATH:/usr/local/go/bin
         cd $BUILD_DIR
         apt-get update
-        apt install sudo -y
+        apt install tree -y
         tree bin/packages 
     - uses: actions/upload-artifact@v3
       with:
