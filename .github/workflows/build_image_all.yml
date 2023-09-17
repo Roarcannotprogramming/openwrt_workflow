@@ -58,7 +58,7 @@ jobs:
         sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
         sudo -u $BUILDER make defconfig
         # sudo -u $BUILDER sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
-        sed -i 's|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT=""|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT="/usr/local/go"|' .config
+        # sed -i 's|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT=""|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT="/usr/local/go"|' .config
         sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
         mkdir -p $VOLUME_HOME/passwall
         cp -r bin/packages/*/passwall/* $VOLUME_HOME/passwall
