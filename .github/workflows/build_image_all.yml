@@ -65,7 +65,7 @@ jobs:
         sudo -u $BUILDER sed -i '/CONFIG_PACKAGE_v2ray-plugin=m/ s/=m/=n/' .config
         ### set golang external bootstrap root
         # sed -i 's|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT=""|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT="/usr/local/go"|' .config
-        sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j $(nproc) || ( find . -name "config.log" && exit -1 )
+        sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j $(nproc) || cat logs/feeds/passwall/luci-app-passwall/dump.txt 
         mkdir -p $VOLUME_HOME/passwall
         cp -r bin/packages/*/passwall/* $VOLUME_HOME/passwall
         cp -r bin/packages/*/passwall_packages/* $VOLUME_HOME/passwall 
