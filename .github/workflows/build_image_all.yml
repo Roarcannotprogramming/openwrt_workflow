@@ -223,7 +223,7 @@ jobs:
         fi
        
       env:
-        rootfs_size: 4096
+        rootfs_size: 2048
         kernel_size: 256
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e 
                   luci-i18n-base-zh-cn netdata luci-app-ttyd ntpclient luci-app-ntpc pciutils
