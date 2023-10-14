@@ -49,7 +49,7 @@ jobs:
         sudo -u $BUILDER echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
         chown -R $BUILDER:$BUILDER $BUILD_DIR 
         sudo -u $BUILDER ./scripts/feeds update -a
-        sudo -u $BUILDER ./scripts/feeds install luci-app-passwall || cat logs/feeds/passwall/luci-app-passwall/dump.txt
+        sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
         sudo -u $BUILDER make defconfig
         ### enable all passwall packages
         # sudo -u $BUILDER sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
