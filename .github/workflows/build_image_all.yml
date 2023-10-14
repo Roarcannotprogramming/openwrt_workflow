@@ -14,9 +14,6 @@ jobs:
         arch: [x86-64, rockchip-armv8]
     name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
-    container: 
-      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
-      options: --user root
     defaults:
       run:
         shell: bash
