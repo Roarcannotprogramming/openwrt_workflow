@@ -46,7 +46,7 @@ jobs:
     - name: Run Make
       run: |
         chmod +x ${{ github.workspace }}/build_clash.sh
-        docker run -it --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
+        docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
 
 
   build_passwall:
