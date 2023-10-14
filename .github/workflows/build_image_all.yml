@@ -29,6 +29,11 @@ jobs:
         remove-codeql: 'true'
         remove-docker-images: 'true'
 
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
     - name: modify docker path
       run: |
         sudo systemctl stop docker.socket
@@ -37,11 +42,6 @@ jobs:
         sudo mv /var/lib/docker ${{ github.workspace }}/docker 
         sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
         sudo systemctl start docker
-
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
 
     - name: Run Make
       run: |
