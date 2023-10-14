@@ -21,9 +21,23 @@ jobs:
     - name: Maximize build space
       uses: easimon/maximize-build-space@v8
       with:
-        root-reserve-mb: 30720
+        root-reserve-mb: 1024
         swap-size-mb: 1024
         remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: modify docker path
+      run: |
+        systemctl stop docker
+        mkdir -p ${{ github.workspace }}/docker 
+        mv /var/lib/docker ${{ github.workspace }}/docker 
+        ln -sf ${{ github.workspace }}/docker /var/lib/docker
+        systemctl start docker
+
+
     - name: Run Make
       uses: addnab/docker-run-action@v3
       with:
