@@ -31,11 +31,11 @@ jobs:
 
     - name: modify docker path
       run: |
-        systemctl stop docker
-        mkdir -p ${{ github.workspace }}/docker 
-        mv /var/lib/docker ${{ github.workspace }}/docker 
-        ln -sf ${{ github.workspace }}/docker /var/lib/docker
-        systemctl start docker
+        sudo systemctl stop docker
+        sudo mkdir -p ${{ github.workspace }}/docker 
+        sudo mv /var/lib/docker ${{ github.workspace }}/docker 
+        sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
+        sudo systemctl start docker
 
 
     - name: Run Make
