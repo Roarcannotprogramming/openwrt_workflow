@@ -27,3 +27,5 @@ cat .config
 echo "================== DEBUG PRINT END =================="
 sudo -u $BUILDER make package/luci-app-openclash/luci-app-openclash/compile V=99
 tree bin/packages 
+
+cp -r bin/packages/*/base/* /openclash

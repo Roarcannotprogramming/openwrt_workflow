@@ -46,8 +46,13 @@ jobs:
     - name: Run Make
       run: |
         chmod +x ${{ github.workspace }}/build_clash.sh
-        docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
+        mkdir -p ${{ github.workspace }}/openclash 
+        docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh -v ${{ github.workspace }}/openclash/:/openclash/ openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
+        path: openclash 
 
   build_passwall:
     strategy:
@@ -204,41 +209,62 @@ jobs:
         version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
         arch: [x86-64, rockchip-armv8]
     if: ${{ always() }}
-    needs: [build_passwall, build_theme_argon, build_luci_app_netdata]
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_openclash]
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
-    container: 
-      image: openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }}
-      options: --user root
+    # container: 
+    #   image: openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }}
+    #   options: --user root
     defaults:
       run:
         shell: bash
     steps:
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@v8
+      with:
+        root-reserve-mb: 1024
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
     - uses: actions/download-artifact@v3
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
     - uses: actions/download-artifact@v3
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v3
     #   with:
     #     name: luci-app-netdata
+
+    - name: modify docker path
+      run: |
+        sudo systemctl stop docker.socket
+        sudo systemctl stop docker
+        sudo mkdir -p ${{ github.workspace }}/docker 
+        sudo mv /var/lib/docker ${{ github.workspace }}/docker 
+        sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
+        sudo systemctl start docker
+
+
     - name: Prepare Packages
       run: |
-        export VOLUME_HOME=$(pwd)
+        export VOLUME_HOME=${{ github.workspace }}
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
-        cd $BUILD_DIR 
-        mkdir -p $BUILD_DIR/packages/mypackages
-        cp -r $VOLUME_HOME/* packages/mypackages/
-    - name: Debug Print
-      run: |
-        export VOLUME_HOME=$(pwd)
-        export BUILD_DIR="/builder"
-        export BUILDER="buildbot"
-        apt update
-        apt install tree sudo -y
-        tree $BUILD_DIR/packages
+        mkdir -p $VOLUME_HOME/mypackages
+        mv $VOLUME_HOME/*.ipk $VOLUME_HOME/mypackages/
 
     - name: Set profile
       run: |
@@ -249,24 +275,25 @@ jobs:
         fi
     - name: Make Image
       run: |
-        export VOLUME_HOME=$(pwd)
+        export VOLUME_HOME=${{ github.workspace }}
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
-        cd $BUILD_DIR 
-        chown -R $BUILDER:$BUILDER packages
-        sudo -u $BUILDER sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=${{ env.rootfs_size }}/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=${{ env.kernel_size }}/g" .config
-        echo ${{ env.profile }}
-        sudo -u $BUILDER make image PROFILE=${{ env.profile }} PACKAGES="${{ env.packages }} packages/mypackages/*"
-        mkdir -p $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}
-        tree bin/targets
-        if ${{ matrix.arch == 'x86-64' }}; then
-          cp bin/targets/x86/64/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
-        elif ${{ matrix.arch == 'rockchip-armv8' }}; then
-          cp bin/targets/rockchip/armv8/* $VOLUME_HOME/openwrt-${{ matrix.arch }}-${{ matrix.version }}/
-        fi
-       
+        chmod +x $VOLUME_HOME/build_image.sh
+        docker run -i --name openwrt-imagebuilder-${{ matrix.arch }}-${{ matrix.version }} \
+         --user root \
+         -v $VOLUME_HOME/mypackages/:$BUILD_DIR/packages/mypackages/ \
+         -v $VOLUME_HOME/openwrt_output/:/openwrt_output/ \
+         -v $VOLUME_HOME/build_image.sh:/build_image.sh \
+         -e PROFILE=${{ env.profile }} \
+         -e PACKAGES="${{ env.packages }}" \
+         -e ROOTFS_SIZE=${{ env.rootfs_size }} \
+         -e KERNEL_SIZE=${{ env.kernel_size }} \
+         -e ARCH=${{ matrix.arch }} \
+         -e VERSION=${{ matrix.version }} \
+         openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }} /build_image.sh 
+
       env:
-        rootfs_size: 2048
+        rootfs_size: 4096
         kernel_size: 256
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e 
                   luci-i18n-base-zh-cn netdata luci-app-ttyd ntpclient luci-app-ntpc pciutils
@@ -285,4 +312,4 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
           name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
-          path: openwrt-${{ matrix.arch }}-${{ matrix.version }}
+          path: openwrt_output
