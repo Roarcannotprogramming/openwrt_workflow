@@ -6,6 +6,60 @@ on:
     - cron: "0 21 * * *"
 
 jobs:
+  build_openclash:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 22.03-SNAPSHOT, 23.05-SNAPSHOT, 22.03.5]
+        arch: [x86-64, rockchip-armv8]
+    name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR 
+        apt-get update
+        apt install sudo tree -y
+        sudo -u $BUILDER mkdir package/luci-app-openclash
+        pushd package/luci-app-openclash
+        sudo -u $BUILDER git init
+        sudo -u $BUILDER git remote add -f origin https://github.com/vernesong/OpenClash.git
+        sudo -u $BUILDER git config core.sparsecheckout true
+        sudo -u $BUILDER echo "luci-app-openclash" >> .git/info/sparse-checkout
+        sudo -u $BUILDER git pull origin master
+        sudo -u $BUILDER git branch --set-upstream-to=origin/master master
+        popd
+
+        pushd package/luci-app-openclash/luci-app-openclash/tools/po2lmo
+        sudo -u $BUILDER make && sudo make install
+        popd
+
+        sudo -u $BUILDER make defconfig
+        echo "================== DEBUG PRINT BEGIN =================="
+        cat .config
+        echo "================== DEBUG PRINT END =================="
+        sudo -u $BUILDER make package/luci-app-openclash/luci-app-openclash/compile V=99
+
+    - name: Debug Print
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR
+        apt-get update
+        apt install tree -y
+        tree bin/packages 
+
   build_passwall:
     strategy:
       fail-fast: false
