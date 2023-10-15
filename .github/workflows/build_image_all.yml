@@ -30,7 +30,7 @@ jobs:
         remove-docker-images: 'true'
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -69,7 +69,6 @@ jobs:
       run:
         shell: bash
     steps:
-    # - uses: actions/checkout@v3
 
     - name: Install golang
       run: |
@@ -145,7 +144,7 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
@@ -181,7 +180,7 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
@@ -231,7 +230,7 @@ jobs:
         remove-docker-images: 'true'
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
