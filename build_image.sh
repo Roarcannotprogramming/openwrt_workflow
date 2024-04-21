@@ -20,4 +20,6 @@ if [ "$ARCH" == "x86-64" ]; then
     cp bin/targets/x86/64/* /openwrt_output/ 
 elif [ "$ARCH" == "rockchip-armv8" ]; then
     cp bin/targets/rockchip/armv8/* /openwrt_output/
+elif [ "$ARCH" == "mediatek-filogic" ]; then
+    cp bin/targets/mediatek/filogic/* /openwrt_output/
 fi
