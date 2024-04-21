@@ -201,14 +201,60 @@ jobs:
         name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-app-netdata 
 
+  build_5G:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 23.05.3]
+        arch: [mediatek-filogic]
+    name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR 
+        apt-get update
+        apt install sudo -y
+        sudo -u $BUILDER mv $VOLUME_HOME/nradio/luci-app-zmodem package/luci-app-zmodem
+        sudo -u $BUILDER mv $VOLUME_HOME/nradio/luci-app-sms-tool package/luci-app-sms-tool
+        sudo -u $BUILDER mv $VOLUME_HOME/nradio/sendat package/sendat
+        sudo -u $BUILDER mv $VOLUME_HOME/nradio/sms-tool package/sms-tool
+        while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        while ! sudo -u $BUILDER ./scripts/feeds install -a; do echo "Try again"; done
+        sudo -u $BUILDER make defconfig
+        sudo -u $BUILDER make package/luci-app-zmodem/compile V=s -j1
+        sudo -u $BUILDER make package/luci-app-sms-tool/compile V=s -j1
+        sudo -u $BUILDER make package/sendat/compile V=s -j1
+        sudo -u $BUILDER make package/sms-tool/compile V=s -j1
+        mkdir -p $VOLUME_HOME/package_5g
+        cp bin/packages/*/base/luci-i18n-sms-tool-zh-cn*.ipk $VOLUME_HOME/package_5g/ 
+        cp bin/packages/*/base/luci-app-sms-tool*.ipk $VOLUME_HOME/package_5g/ 
+        cp bin/packages/*/base/sms-tool*.ipk $VOLUME_HOME/package_5g/ 
+        cp bin/packages/*/base/sendat*.ipk $VOLUME_HOME/package_5g/ 
+        cp bin/packages/*/base/luci-app-zmodem*.ipk $VOLUME_HOME/package_5g/ 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: package_5g-${{ matrix.arch }}-${{ matrix.version }}
+        path: package_5g 
+
   build_image:
     strategy:
       fail-fast: false
       matrix:
-        version: [master, 22.03.6, 23.05.3]
+        version: [master, 23.05.3]
         arch: [mediatek-filogic]
     if: ${{ always() }}
-    needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_openclash]
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_openclash, build_5G]
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     # container: 
@@ -243,6 +289,9 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: openclash-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: package_5g-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v3
     #   with:
     #     name: luci-app-netdata
@@ -267,7 +316,7 @@ jobs:
 
     - name: Set profile
       run: |
-        echo "profile=mediatek-filogic-nradio-c8-668" >> $GITHUB_ENV
+        echo "profile=confiabits_mt7981" >> $GITHUB_ENV
     - name: Make Image
       run: |
         export VOLUME_HOME=${{ github.workspace }}
