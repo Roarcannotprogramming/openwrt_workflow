@@ -342,13 +342,15 @@ jobs:
         packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e 
                   luci-i18n-base-zh-cn netdata luci-app-ttyd pciutils
                   coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
-                  vim python3 python3-yaml sudo docker dockerd docker-compose ipset samba4-server  
+                  vim python3 python3-yaml sudo  ipset samba4-server  
                   openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4
                   tcpdump zstd tmux bash netcat ip6tables-mod-nat iptables-mod-tproxy dnsmasq-full hostapd 
                   wpa-supplicant xl2tpd tailscale kmod-loop nfs-kernel-server iptables-mod-socket
                   iptables-mod-iprange mwan3 luci-app-mwan3 kmod-nft-socket kmod-nft-tproxy kmod-nft-nat
                   wireguard-tools kmod-wireguard luci-app-wireguard luci-proto-wireguard
+                  ntpclient luci-app-ntpc
                   base-files busybox ca-bundle dropbear e2fsprogs f2fsck firewall4 fstools kmod-crypto-hw-safexcel kmod-gpio-button-hotplug kmod-leds-gpio kmod-mt7915e kmod-mt7981-firmware kmod-nft-offload kmod-phy-aquantia kmod-usb3 libc libgcc libustream-mbedtls logd luci mkf2fs mt7981-wo-firmware mtd netifd nftables odhcp6c odhcpd-ipv6only opkg ppp ppp-mod-pppoe procd procd-seccomp procd-ujail uboot-envtools uci uclient-fetch urandom-seed urngd wpad-basic-mbedtls
+#                   docker dockerd docker-compose
 #                   luci-theme-argon ntpclient luci-app-ntpc
 #                   chinadns-ng dns2socks dns2tcp luci-app-passwall luci-i18n-passwall-zh-cn microsocks
 #                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
