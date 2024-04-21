@@ -1,0 +1,312 @@
+name: BuildImage-all
+on: 
+  workflow_dispatch:
+  push:
+  schedule:
+    - cron: "0 21 * * *"
+
+jobs:
+  build_openclash:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 23.05.3]
+        arch: [mediatek-filogic]
+    name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@v8
+      with:
+        root-reserve-mb: 1024
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: modify docker path
+      run: |
+        sudo systemctl stop docker.socket
+        sudo systemctl stop docker
+        sudo mkdir -p ${{ github.workspace }}/docker 
+        sudo mv /var/lib/docker ${{ github.workspace }}/docker 
+        sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
+        sudo systemctl start docker
+
+    - name: Run Make
+      run: |
+        chmod +x ${{ github.workspace }}/build_clash.sh
+        mkdir -p ${{ github.workspace }}/openclash 
+        docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh -v ${{ github.workspace }}/openclash/:/openclash/ openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
+        path: openclash 
+
+  build_passwall:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 23.05.3]
+        arch: [mediatek-filogic]
+    name: Build Passwall for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+
+    - name: Install golang
+      run: |
+        # VERSION=`curl -L https://golang.org/VERSION?m=text|awk 'NR==1{print $0}'`
+        VERSION="go1.20.3"
+        wget https://go.dev/dl/$VERSION.linux-amd64.tar.gz
+        rm -rf /usr/local/go
+        tar -C /usr/local -xzf $VERSION.linux-amd64.tar.gz
+        rm -rf $VERSION.linux-amd64.tar.gz
+        export GOROOT=/usr/local/go
+        export PATH=$PATH:/usr/local/go/bin
+        go version
+
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        export GOROOT=/usr/local/go
+        export PATH=$PATH:/usr/local/go/bin
+        cd $BUILD_DIR 
+        apt-get update
+        apt install sudo -y
+        sudo -u $BUILDER echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall.git;main" >> "feeds.conf.default"
+        sudo -u $BUILDER echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
+        chown -R $BUILDER:$BUILDER $BUILD_DIR 
+        while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
+        sudo -u $BUILDER make defconfig
+        ### enable all passwall packages
+        # sudo -u $BUILDER sed -i  "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config 
+        ### disable singbox
+        # sudo -u $BUILDER sed -i '/CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox=y/ s/=y/=n/' .config
+        ### disable v2ray-plugin
+        # sudo -u $BUILDER sed -i '/CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin=y/ s/=y/=n/' .config
+        ### set golang external bootstrap root
+        # sed -i 's|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT=""|CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT="/usr/local/go"|' .config
+        sudo -u $BUILDER make package/luci-app-passwall/compile V=99 -j1  || cat logs/feeds/passwall/luci-app-passwall/dump.txt 
+        mkdir -p $VOLUME_HOME/passwall
+        cp -r bin/packages/*/passwall/* $VOLUME_HOME/passwall
+        cp -r bin/packages/*/passwall_packages/* $VOLUME_HOME/passwall 
+        ### do not copy all packages, just copy passwall and passwall_packages
+        # cp -r bin/packages/*/packages/* $VOLUME_HOME/passwall 
+        # cp -r bin/packages $VOLUME_HOME/passwall
+
+    - name: Debug Print
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        export PATH=$PATH:/usr/local/go/bin
+        cd $BUILD_DIR
+        apt-get update
+        apt install tree -y
+        tree bin/packages 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
+        path: passwall 
+
+  build_theme_argon:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 23.05.3]
+        arch: [mediatek-filogic]
+    name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR 
+        apt-get update
+        apt install sudo -y
+        sudo -u $BUILDER git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+        while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        sudo -u $BUILDER make defconfig
+        sudo -u $BUILDER make package/luci-theme-argon/compile V=s -j1
+        mkdir -p $VOLUME_HOME/luci-theme-argon
+        cp bin/packages/*/base/luci-theme-argon*.ipk $VOLUME_HOME/luci-theme-argon/ 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+        path: luci-theme-argon 
+  
+  # luci app netdata has some bugs, so just not use it for now!
+  build_luci_app_netdata:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 23.05.3]
+        arch: [mediatek-filogic]
+    name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }} 
+    runs-on: ubuntu-latest
+    container: 
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR 
+        apt-get update
+        apt install sudo -y
+        sudo -u $BUILDER git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
+        while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        sudo -u $BUILDER ./scripts/feeds install -a
+        sudo -u $BUILDER make defconfig
+        sudo -u $BUILDER make package/luci-app-netdata/compile V=s -j1
+        mkdir -p $VOLUME_HOME/luci-app-netdata
+        cp bin/packages/*/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
+    - uses: actions/upload-artifact@v3
+      with:
+        name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
+        path: luci-app-netdata 
+
+  build_image:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [master, 22.03.6, 23.05.3]
+        arch: [mediatek-filogic]
+    if: ${{ always() }}
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_openclash]
+    name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    # container: 
+    #   image: openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }}
+    #   options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@v8
+      with:
+        root-reserve-mb: 1024
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: passwall-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
+    # - uses: actions/download-artifact@v3
+    #   with:
+    #     name: luci-app-netdata
+
+    - name: modify docker path
+      run: |
+        sudo systemctl stop docker.socket
+        sudo systemctl stop docker
+        sudo mkdir -p ${{ github.workspace }}/docker 
+        sudo mv /var/lib/docker ${{ github.workspace }}/docker 
+        sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
+        sudo systemctl start docker
+
+
+    - name: Prepare Packages
+      run: |
+        export VOLUME_HOME=${{ github.workspace }}
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        mkdir -p $VOLUME_HOME/mypackages
+        mv $VOLUME_HOME/*.ipk $VOLUME_HOME/mypackages/
+
+    - name: Set profile
+      run: |
+        echo "profile=mediatek-filogic-nradio-c8-668" >> $GITHUB_ENV
+    - name: Make Image
+      run: |
+        export VOLUME_HOME=${{ github.workspace }}
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        chmod +x $VOLUME_HOME/build_image.sh
+        docker run -i --name openwrt-imagebuilder-${{ matrix.arch }}-${{ matrix.version }} \
+         --user root \
+         -v $VOLUME_HOME/mypackages/:$BUILD_DIR/packages/mypackages/ \
+         -v $VOLUME_HOME/openwrt_output/:/openwrt_output/ \
+         -v $VOLUME_HOME/build_image.sh:/build_image.sh \
+         -e PROFILE=${{ env.profile }} \
+         -e PACKAGES="${{ env.packages }}" \
+         -e ROOTFS_SIZE=${{ env.rootfs_size }} \
+         -e KERNEL_SIZE=${{ env.kernel_size }} \
+         -e ARCH=${{ matrix.arch }} \
+         -e VERSION=${{ matrix.version }} \
+         openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }} /build_image.sh 
+
+      env:
+        rootfs_size: 4096
+        kernel_size: 256
+        packages: luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e 
+                  luci-i18n-base-zh-cn netdata luci-app-ttyd pciutils
+                  coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
+                  vim python3 python3-yaml sudo docker dockerd docker-compose ipset samba4-server  
+                  openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4
+                  tcpdump zstd tmux bash netcat ip6tables-mod-nat iptables-mod-tproxy dnsmasq-full hostapd 
+                  wpa-supplicant xl2tpd tailscale kmod-loop nfs-kernel-server iptables-mod-socket
+                  iptables-mod-iprange mwan3 luci-app-mwan3 kmod-nft-socket kmod-nft-tproxy kmod-nft-nat
+                  wireguard-tools kmod-wireguard luci-app-wireguard luci-proto-wireguard
+                  base-files busybox ca-bundle dropbear e2fsprogs f2fsck firewall4 fstools kmod-crypto-hw-safexcel kmod-gpio-button-hotplug kmod-leds-gpio kmod-mt7915e kmod-mt7981-firmware kmod-nft-offload kmod-phy-aquantia kmod-usb3 libc libgcc libustream-mbedtls logd luci mkf2fs mt7981-wo-firmware mtd netifd nftables odhcp6c odhcpd-ipv6only opkg ppp ppp-mod-pppoe procd procd-seccomp procd-ujail uboot-envtools uci uclient-fetch urandom-seed urngd wpad-basic-mbedtls
+#                   luci-theme-argon ntpclient luci-app-ntpc
+#                   chinadns-ng dns2socks dns2tcp luci-app-passwall luci-i18n-passwall-zh-cn microsocks
+#                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
+#                   shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs
+#                   tcping trojan-plus v2ray-core v2ray-example v2ray-extra v2ray-plugin 
+#                   open-vm-tools
+    - uses: actions/upload-artifact@v3
+      with:
+          name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
+          path: openwrt_output
