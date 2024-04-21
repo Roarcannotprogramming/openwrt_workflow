@@ -1,4 +1,4 @@
-name: BuildImage-all
+name: BuildImage-MT7981
 on: 
   workflow_dispatch:
   push:
