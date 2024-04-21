@@ -207,7 +207,7 @@ jobs:
       matrix:
         version: [master, 23.05.3]
         arch: [mediatek-filogic]
-    name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    name: Build 5G Package for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
       image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
@@ -225,10 +225,10 @@ jobs:
         cd $BUILD_DIR 
         apt-get update
         apt install sudo -y
-        sudo -u $BUILDER mv $VOLUME_HOME/nradio/luci-app-zmodem package/luci-app-zmodem
-        sudo -u $BUILDER mv $VOLUME_HOME/nradio/luci-app-sms-tool package/luci-app-sms-tool
-        sudo -u $BUILDER mv $VOLUME_HOME/nradio/sendat package/sendat
-        sudo -u $BUILDER mv $VOLUME_HOME/nradio/sms-tool package/sms-tool
+        sudo -u $BUILDER cp -r $VOLUME_HOME/nradio/luci-app-zmodem package/luci-app-zmodem
+        sudo -u $BUILDER cp -r $VOLUME_HOME/nradio/luci-app-sms-tool package/luci-app-sms-tool
+        sudo -u $BUILDER cp -r $VOLUME_HOME/nradio/sendat package/sendat
+        sudo -u $BUILDER cp -r $VOLUME_HOME/nradio/sms-tool package/sms-tool
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
         while ! sudo -u $BUILDER ./scripts/feeds install -a; do echo "Try again"; done
         sudo -u $BUILDER make defconfig
