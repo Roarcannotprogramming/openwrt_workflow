@@ -314,9 +314,34 @@ jobs:
         mkdir -p $VOLUME_HOME/mypackages
         mv $VOLUME_HOME/*.ipk $VOLUME_HOME/mypackages/
 
+    - name: Prepare DTS
+      run: |
+        cat << EOF >> /openwrt_base/target/linux/mediatek/image/filogic.mk
+
+        define Device/nradio_c8-668
+          DEVICE_VENDOR := NRadio
+          DEVICE_MODEL := C8-668
+          DEVICE_DTS := mt7981-nradio-wt9108
+          DEVICE_DTS_DIR := ../dts
+          UBINIZE_OPTS := -E 5
+          BLOCKSIZE := 128k
+          PAGESIZE := 2048
+          IMAGE_SIZE := 65536k
+          KERNEL_IN_UBI := 1
+          IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+          DEVICE_PACKAGES := kmod-usb3 kmod-mt7981-firmware mt7981-wo-firmware
+        endef
+        TARGET_DEVICES += nradio_c8-668
+
+        EOF
+
+        cat /openwrt_base/target/linux/mediatek/image/filogic.mk
+
+        cp $VOLUME_HOME/nradio/dts/* /openwrt_base/target/linux/mediatek/dts/
+
     - name: Set profile
       run: |
-        echo "profile=confiabits_mt7981" >> $GITHUB_ENV
+        echo "profile=nradio_c8-668" >> $GITHUB_ENV
     - name: Make Image
       run: |
         export VOLUME_HOME=${{ github.workspace }}
