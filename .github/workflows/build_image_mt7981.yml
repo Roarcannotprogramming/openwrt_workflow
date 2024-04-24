@@ -337,7 +337,7 @@ jobs:
 
         cat /builder/target/linux/mediatek/image/filogic.mk
 
-        cp ${{ github.workspace }}/nradio/dts/* /openwrt_base/target/linux/mediatek/dts/
+        cp ${{ github.workspace }}/nradio/dts/* /builder/target/linux/mediatek/dts/
 
     - name: Set profile
       run: |
