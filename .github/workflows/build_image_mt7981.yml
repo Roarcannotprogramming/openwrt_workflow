@@ -316,7 +316,7 @@ jobs:
 
     - name: Prepare DTS
       run: |
-        cat << EOF >> /openwrt_base/target/linux/mediatek/image/filogic.mk
+        cat << EOF >> /builder/target/linux/mediatek/image/filogic.mk
 
         define Device/nradio_c8-668
           DEVICE_VENDOR := NRadio
@@ -335,9 +335,9 @@ jobs:
 
         EOF
 
-        cat /openwrt_base/target/linux/mediatek/image/filogic.mk
+        cat /builder/target/linux/mediatek/image/filogic.mk
 
-        cp $VOLUME_HOME/nradio/dts/* /openwrt_base/target/linux/mediatek/dts/
+        cp ${{ github.workspace }}/nradio/dts/* /openwrt_base/target/linux/mediatek/dts/
 
     - name: Set profile
       run: |
