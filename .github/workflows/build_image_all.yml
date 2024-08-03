@@ -301,9 +301,9 @@ jobs:
                   openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4
                   tcpdump zstd tmux bash netcat ip6tables-mod-nat iptables-mod-tproxy dnsmasq-full hostapd 
                   wpa-supplicant xl2tpd kmod-loop nfs-kernel-server iptables-mod-socket
-                  iptables-mod-iprange mwan3 luci-app-mwan3 kmod-nft-socket kmod-nft-tproxy kmod-nft-nat
+                  iptables-mod-iprange kmod-nft-socket kmod-nft-tproxy kmod-nft-nat
                   wireguard-tools kmod-wireguard luci-app-wireguard luci-proto-wireguard
-#                   docker dockerd docker-compose tailscale
+#                   docker dockerd docker-compose tailscale mwan3 luci-app-mwan3
 #                   luci-theme-argon ntpclient luci-app-ntpc
 #                   chinadns-ng dns2socks dns2tcp luci-app-passwall luci-i18n-passwall-zh-cn microsocks
 #                   shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat
