@@ -49,7 +49,7 @@ jobs:
         mkdir -p ${{ github.workspace }}/openclash 
         docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh -v ${{ github.workspace }}/openclash/:/openclash/ openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: openclash-${{ matrix.arch }}-${{ matrix.version }}
         path: openclash 
@@ -124,7 +124,7 @@ jobs:
         apt-get update
         apt install tree -y
         tree bin/packages 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
         path: passwall 
@@ -159,7 +159,7 @@ jobs:
         sudo -u $BUILDER make package/luci-theme-argon/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-theme-argon
         cp bin/packages/*/base/luci-theme-argon*.ipk $VOLUME_HOME/luci-theme-argon/ 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-theme-argon 
@@ -196,7 +196,7 @@ jobs:
         sudo -u $BUILDER make package/luci-app-netdata/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-app-netdata
         cp bin/packages/*/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-app-netdata 
@@ -234,16 +234,16 @@ jobs:
       with:
         fetch-depth: 0
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: openclash-${{ matrix.arch }}-${{ matrix.version }}
-    # - uses: actions/download-artifact@v3
+    # - uses: actions/download-artifact@v4
     #   with:
     #     name: luci-app-netdata
 
@@ -310,7 +310,7 @@ jobs:
 #                   shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs
 #                   tcping trojan-plus v2ray-core v2ray-example v2ray-extra v2ray-plugin 
 #                   open-vm-tools
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
           name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
           path: openwrt_output
