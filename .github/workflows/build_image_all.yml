@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [22.03.6, 23.05.4, 24.10.0]
+        version: [22.03.6, 23.05.4, 24.10.4]
         arch: [x86-64, rockchip-armv8]
     name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [22.03.6, 23.05.4, 24.10.0]
+        version: [22.03.6, 23.05.4, 24.10.4]
         arch: [x86-64, rockchip-armv8]
     name: Build Passwall for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -133,7 +133,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [22.03.6, 23.05.4, 24.10.0]
+        version: [22.03.6, 23.05.4, 24.10.4]
         arch: [x86-64, rockchip-armv8]
     name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -169,7 +169,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [22.03.6, 23.05.4, 24.10.0]
+        version: [22.03.6, 23.05.4, 24.10.4]
         arch: [x86-64, rockchip-armv8]
     name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }} 
     runs-on: ubuntu-latest
@@ -205,7 +205,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [22.03.6, 23.05.4, 24.10.0]
+        version: [22.03.6, 23.05.4, 24.10.4]
         arch: [x86-64, rockchip-armv8]
     if: ${{ always() }}
     needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_openclash]
