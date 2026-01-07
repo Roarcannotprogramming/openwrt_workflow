@@ -17,11 +17,11 @@ echo $PROFILE
 
 # For OpenWRT 25.x (apk), need to allow untrusted packages
 if [[ "$VERSION" == 25.* ]]; then
-    echo "OpenWRT 25.x detected, adding local key for custom packages..."
-    sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*" ADD_LOCAL_KEY=1
-else
-    sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*"
+    echo "OpenWRT 25.x detected, disabling signature check for custom packages..."
+    sed -i 's/CONFIG_SIGNATURE_CHECK=y/# CONFIG_SIGNATURE_CHECK is not set/' .config
 fi
+
+sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*"
 tree bin/targets
 if [ "$ARCH" == "x86-64" ]; then
     cp bin/targets/x86/64/* /openwrt_output/ 
