@@ -5,16 +5,23 @@ export VOLUME_HOME=$(pwd)
 export BUILD_DIR="/builder"
 export BUILDER="buildbot"
 
-cd $BUILD_DIR 
+cd $BUILD_DIR
 apt-get update
 apt install sudo tree -y
 
-tree packages/mypackages 
+tree packages/mypackages
 
 chown -R $BUILDER:$BUILDER packages
 sudo -u $BUILDER sed -i "s/CONFIG_TARGET_ROOTFS_PARTSIZE=[0-9]\+/CONFIG_TARGET_ROOTFS_PARTSIZE=$ROOTFS_SIZE/g;s/CONFIG_TARGET_KERNEL_PARTSIZE=[0-9]\+/CONFIG_TARGET_KERNEL_PARTSIZE=$KERNEL_SIZE/g" .config
 echo $PROFILE
-sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*"
+
+# For OpenWRT 25.x (apk), need to allow untrusted packages
+if [[ "$VERSION" == 25.* ]]; then
+    echo "OpenWRT 25.x detected, adding local key for custom packages..."
+    sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*" ADD_LOCAL_KEY=1
+else
+    sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*"
+fi
 tree bin/targets
 if [ "$ARCH" == "x86-64" ]; then
     cp bin/targets/x86/64/* /openwrt_output/ 
