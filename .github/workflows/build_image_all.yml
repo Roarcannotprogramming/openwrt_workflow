@@ -99,6 +99,8 @@ jobs:
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
         sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
         sudo -u $BUILDER make defconfig
+        ### enable SingBox
+        sudo -u $BUILDER sed -i 's/# CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox is not set/CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox=y/' .config
         ### enable all passwall packages
         # sudo -u $BUILDER sed -i "s/# \(CONFIG_PACKAGE_luci-app-passwall_.*\) is not set/\1=y/g" .config
         ### disable singbox
