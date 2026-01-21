@@ -93,8 +93,8 @@ jobs:
         cd $BUILD_DIR
         apt-get update
         apt install sudo tree -y
-        sudo -u $BUILDER echo "src-git passwall https://github.com/xiaorouji/openwrt-passwall.git;main" >> "feeds.conf.default"
-        sudo -u $BUILDER echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
+        sudo -u $BUILDER echo "src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;main" >> "feeds.conf.default"
+        sudo -u $BUILDER echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
         chown -R $BUILDER:$BUILDER $BUILD_DIR
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
         sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
