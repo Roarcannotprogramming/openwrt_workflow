@@ -2,8 +2,8 @@ name: BuildImage-MT7981
 on: 
   workflow_dispatch:
   push:
-  schedule:
-    - cron: "0 21 * * *"
+  # schedule:
+  #  - cron: "0 21 * * *"
 
 jobs:
   build_openclash:
