@@ -1,7 +1,7 @@
 name: BuildImage-MT7981
 on: 
   workflow_dispatch:
-  push:
+  # push:
   # schedule:
   #  - cron: "0 21 * * *"
 
