@@ -18,11 +18,26 @@ jobs:
           echo "Current run ID: ${{ github.run_id }}"
           echo "Cutoff date: $(date -d '-7 day' -Iseconds)"
 
-          # 删除 7 天前的 runs（排除当前 run）
+          # 获取 BuildImage-all 最近一次成功的 run ID
+          LATEST_ALL=$(gh run list --workflow "build_image_all.yml" --status success --limit 1 --json databaseId \
+            | jq -r '.[0].databaseId // empty')
+          echo "Latest successful BuildImage-all ID: ${LATEST_ALL:-none}"
+
+          # 获取 BuildImage-MT7981 最近一次成功的 run ID
+          LATEST_MT7981=$(gh run list --workflow "build_image_mt7981.yml" --status success --limit 1 --json databaseId \
+            | jq -r '.[0].databaseId // empty')
+          echo "Latest successful BuildImage-MT7981 ID: ${LATEST_MT7981:-none}"
+
+          # 删除 7 天前的 runs（排除当前 run 和两个工作流各自最近成功的构建）
           gh run list --limit 200 --json databaseId,createdAt \
             | jq -r --arg current "${{ github.run_id }}" \
                     --arg cutoff "$(date -d '-7 day' -Iseconds)" \
-              '.[] | select(.createdAt < $cutoff and (.databaseId | tostring) != $current) | .databaseId' \
+                    --arg latest_all "$LATEST_ALL" \
+                    --arg latest_mt7981 "$LATEST_MT7981" \
+              '.[] | select(.createdAt < $cutoff
+                and (.databaseId | tostring) != $current
+                and (.databaseId | tostring) != $latest_all
+                and (.databaseId | tostring) != $latest_mt7981) | .databaseId' \
             | while read -r id; do
                 [ -z "$id" ] && continue
                 echo "Deleting old run: $id"
