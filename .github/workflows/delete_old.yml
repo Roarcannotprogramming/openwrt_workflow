@@ -1,60 +1,44 @@
 name: Delete Old Build Artifacts
-on: 
+on:
   workflow_dispatch:
-  push:
   schedule:
     - cron: "0 21 * * *"
 
 jobs:
-  get_and_delete_old_run_ids:
+  cleanup:
     runs-on: ubuntu-latest
     permissions:
       actions: write
     steps:
-      - name: Get old run IDs
+      - name: Delete old workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "OLD_IDS<<$EOF" >> "$GITHUB_ENV"
+          echo "Current run ID: ${{ github.run_id }}"
+          echo "Cutoff date: $(date -d '-7 day' -Iseconds)"
 
-          curl -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs \
-            | jq -r '.workflow_runs[] | select(.created_at < "'$(date -d "-7 day" +%Y-%m-%dT%H:%M:%SZ)'") | .id' >> "$GITHUB_ENV"
-          
-          curl -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs \
-            | jq -r '.workflow_runs[] | select(.name == "Delete Old Build Artifacts") | .id' >> "$GITHUB_ENV"
- 
-          echo "$EOF" >> "$GITHUB_ENV"
+          # 删除 7 天前的 runs（排除当前 run）
+          gh run list --limit 200 --json databaseId,createdAt \
+            | jq -r --arg current "${{ github.run_id }}" \
+                    --arg cutoff "$(date -d '-7 day' -Iseconds)" \
+              '.[] | select(.createdAt < $cutoff and (.databaseId | tostring) != $current) | .databaseId' \
+            | while read -r id; do
+                [ -z "$id" ] && continue
+                echo "Deleting old run: $id"
+                gh run delete "$id" --repo "$GH_REPO" || true
+              done
 
-      - name: Delete old run IDs
+      - name: Cleanup this workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          echo $OLD_IDS | while read -d ' ' -r id || [[ -n ${id} ]]; do
-            curl -L \
-              -X DELETE \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/$id
-            echo "Delete run id: $id"
-          done
-
-
-
-          # curl -L \
-          #   -X DELETE \
-          #   -H "Accept: application/vnd.github+json" \
-          #   -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
-          #   -H "X-GitHub-Api-Version: 2022-11-28" \
-          #   https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/RUN_ID
-
-
-
-
-
-          # curl -X GET   -H "Accept: application/vnd.github.v3+json"   https://api.github.com/repos/Roarcannotprogramming/openwrt_workflow/actions/runs | jq -r '.workflow_runs[] | select(.created_at < "'$(date -d "-7 day" +%Y-%m-%dT%H:%M:%SZ)'") | .id' 
+          # 删除本工作流的旧 runs（保留最近 5 个）
+          gh run list --workflow "delete_old.yml" --limit 100 --json databaseId \
+            | jq -r '.[5:] | .[].databaseId' \
+            | while read -r id; do
+                [ -z "$id" ] && continue
+                echo "Deleting cleanup workflow run: $id"
+                gh run delete "$id" --repo "$GH_REPO" || true
+              done
