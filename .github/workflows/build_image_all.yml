@@ -8,12 +8,20 @@ on:
     - cron: "0 21 * * *"
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          echo 'matrix={"version":["24.10.5","25.12.0-rc4"],"arch":["x86-64","rockchip-armv8"]}' >> $GITHUB_OUTPUT
+
   build_openclash:
+    needs: [setup]
     strategy:
       fail-fast: false
-      matrix:
-        version: [24.10.5, 25.12.0-rc2]
-        arch: [x86-64, rockchip-armv8]
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     defaults:
@@ -56,11 +64,10 @@ jobs:
         retention-days: 7
 
   build_passwall:
+    needs: [setup]
     strategy:
       fail-fast: false
-      matrix:
-        version: [24.10.5, 25.12.0-rc2]
-        arch: [x86-64, rockchip-armv8]
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     name: Build Passwall for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container: 
@@ -126,11 +133,10 @@ jobs:
         retention-days: 7
 
   build_theme_argon:
+    needs: [setup]
     strategy:
       fail-fast: false
-      matrix:
-        version: [24.10.5, 25.12.0-rc2]
-        arch: [x86-64, rockchip-armv8]
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container:
@@ -171,11 +177,10 @@ jobs:
   # luci app netdata has some bugs, so just not use it for now!
   build_luci_app_netdata:
     if: false  # Disabled due to bugs
+    needs: [setup]
     strategy:
       fail-fast: false
-      matrix:
-        version: [24.10.5, 25.12.0-rc2]
-        arch: [x86-64, rockchip-armv8]
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container:
@@ -215,13 +220,11 @@ jobs:
         retention-days: 7
 
   build_image:
+    needs: [setup, build_passwall, build_theme_argon, build_openclash]
+    if: ${{ always() }}
     strategy:
       fail-fast: false
-      matrix:
-        version: [24.10.5, 25.12.0-rc2]
-        arch: [x86-64, rockchip-armv8]
-    if: ${{ always() }}
-    needs: [build_passwall, build_theme_argon, build_openclash]
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     # container: 
