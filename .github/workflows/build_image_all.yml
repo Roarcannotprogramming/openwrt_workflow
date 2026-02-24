@@ -16,53 +16,6 @@ jobs:
       - id: set-matrix
         run: |
           echo 'matrix={"version":["24.10.5","25.12.0-rc4"],"arch":["x86-64","rockchip-armv8"]}' >> $GITHUB_OUTPUT
-
-  # build_openclash:
-  #   needs: [setup]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
-  #   name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   steps:
-  #   - name: Maximize build space
-  #     uses: easimon/maximize-build-space@v8
-  #     with:
-  #       root-reserve-mb: 1024
-  #       swap-size-mb: 1024
-  #       remove-dotnet: 'true'
-  #       remove-android: 'true'
-  #       remove-haskell: 'true'
-  #       remove-codeql: 'true'
-  #       remove-docker-images: 'true'
-
-  #   - name: Checkout
-  #     uses: actions/checkout@v4
-
-  #   - name: modify docker path
-  #     run: |
-  #       sudo systemctl stop docker.socket
-  #       sudo systemctl stop docker
-  #       sudo mkdir -p ${{ github.workspace }}/docker 
-  #       sudo mv /var/lib/docker ${{ github.workspace }}/docker 
-  #       sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
-  #       sudo systemctl start docker
-
-  #   - name: Run Make
-  #     run: |
-  #       chmod +x ${{ github.workspace }}/build_clash.sh
-  #       mkdir -p ${{ github.workspace }}/openclash 
-  #       docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh -v ${{ github.workspace }}/openclash/:/openclash/ openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
-
-  #   - uses: actions/upload-artifact@v4
-  #     with:
-  #       name: openclash-${{ matrix.arch }}-${{ matrix.version }}
-  #       path: openclash
-  #       retention-days: 7
-
   build_passwall:
     needs: [setup]
     strategy:
@@ -254,9 +207,6 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v4
-      with:
-        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v4
     #   with:
     #     name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}

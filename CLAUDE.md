@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains GitHub Actions workflows for building custom OpenWRT firmware images with additional packages (OpenClash, Passwall, Argon theme). It supports multiple OpenWRT versions and architectures.
+This repository contains GitHub Actions workflows for building custom OpenWRT firmware images with additional packages (Passwall, Argon theme). It supports multiple OpenWRT versions and architectures.
 
 ## Key Architecture
 
@@ -14,8 +14,7 @@ This repository contains GitHub Actions workflows for building custom OpenWRT fi
 - Version detection pattern: `[[ "$VERSION" == 24.* ]]` or `[[ "$VERSION" == 25.* ]]`
 
 ### Build Pipeline (build_image_all.yml)
-1. **build_openclash** - Builds OpenClash using Docker SDK container
-2. **build_passwall** - Builds Passwall (requires Go installation)
+1. **build_passwall** - Builds Passwall (requires Go installation)
 3. **build_theme_argon** - Builds Argon theme
 4. **build_image** - Combines artifacts and creates final firmware image
 
@@ -30,9 +29,6 @@ Jobs run in parallel where possible; `build_image` depends on all package builds
 - **Profiles**: `generic` (x86-64), `friendlyarm_nanopi-r2s` (rockchip-armv8)
 
 ## Build Scripts
-
-### build_clash.sh
-Compiles OpenClash inside SDK container. Outputs to `/openclash`.
 
 ### build_image.sh
 Creates final firmware image. Key environment variables:

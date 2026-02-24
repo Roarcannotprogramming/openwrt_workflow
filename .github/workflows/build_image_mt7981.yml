@@ -6,55 +6,6 @@ on:
   #  - cron: "0 21 * * *"
 
 jobs:
-  build_openclash:
-    strategy:
-      fail-fast: false
-      matrix:
-        version: [master, 23.05.3]
-        arch: [mediatek-filogic]
-    name: Build OpenClash for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-    - name: Maximize build space
-      uses: easimon/maximize-build-space@v8
-      with:
-        root-reserve-mb: 1024
-        swap-size-mb: 1024
-        remove-dotnet: 'true'
-        remove-android: 'true'
-        remove-haskell: 'true'
-        remove-codeql: 'true'
-        remove-docker-images: 'true'
-
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: modify docker path
-      run: |
-        sudo systemctl stop docker.socket
-        sudo systemctl stop docker
-        sudo mkdir -p ${{ github.workspace }}/docker 
-        sudo mv /var/lib/docker ${{ github.workspace }}/docker 
-        sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
-        sudo systemctl start docker
-
-    - name: Run Make
-      run: |
-        chmod +x ${{ github.workspace }}/build_clash.sh
-        mkdir -p ${{ github.workspace }}/openclash 
-        docker run -i --name openwrt-sdk-${{ matrix.arch }}-${{ matrix.version }} --user root -v ${{ github.workspace }}/build_clash.sh:/build_clash.sh -v ${{ github.workspace }}/openclash/:/openclash/ openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }} /build_clash.sh
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
-        path: openclash
-        retention-days: 7
-
   build_passwall:
     strategy:
       fail-fast: false
@@ -268,7 +219,7 @@ jobs:
         version: [master, 23.05.3]
         arch: [mediatek-filogic]
     if: ${{ always() }}
-    needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_openclash, build_5G]
+    needs: [build_passwall, build_theme_argon, build_luci_app_netdata, build_5G]
     name: Build Image for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     # container: 
@@ -300,9 +251,6 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v4
-      with:
-        name: openclash-${{ matrix.arch }}-${{ matrix.version }}
     - uses: actions/download-artifact@v4
       with:
         name: package_5g-${{ matrix.arch }}-${{ matrix.version }}
