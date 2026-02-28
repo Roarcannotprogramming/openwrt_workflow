@@ -15,7 +15,7 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          echo 'matrix={"version":["24.10.5","25.12.0-rc4"],"arch":["x86-64","rockchip-armv8"]}' >> $GITHUB_OUTPUT
+          echo 'matrix={"version":["24.10.5","25.12.0-rc5"],"arch":["x86-64","rockchip-armv8"]}' >> $GITHUB_OUTPUT
   build_passwall:
     needs: [setup]
     strategy:
