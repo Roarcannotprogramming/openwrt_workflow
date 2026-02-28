@@ -15,7 +15,20 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          echo 'matrix={"version":["24.10.5","25.12.0-rc5"],"arch":["x86-64","rockchip-armv8"]}' >> $GITHUB_OUTPUT
+          versions=()
+          for prefix in 24.10 25.12; do
+            sdk=$(curl -sf "https://hub.docker.com/v2/repositories/openwrt/sdk/tags/?page_size=100&name=x86-64-${prefix}" \
+              | jq -r '.results[].name' | grep -oP '(?<=x86-64-)\d+\.\d+\.\d+(-rc\d+)?$')
+            ib=$(curl -sf "https://hub.docker.com/v2/repositories/openwrt/imagebuilder/tags/?page_size=100&name=x86-64-${prefix}" \
+              | jq -r '.results[].name' | grep -oP '(?<=x86-64-)\d+\.\d+\.\d+(-rc\d+)?$')
+            ver=$(comm -12 <(echo "$sdk" | sort) <(echo "$ib" | sort) \
+              | sed 's/-rc/~rc/' | sort -V | tail -1 | sed 's/~rc/-rc/')
+            if [[ -n "$ver" ]]; then
+              versions+=("\"$ver\"")
+            fi
+          done
+          ver_json=$(IFS=,; echo "${versions[*]}")
+          echo "matrix={\"version\":[${ver_json}],\"arch\":[\"x86-64\",\"rockchip-armv8\"]}" >> $GITHUB_OUTPUT
   build_passwall:
     needs: [setup]
     strategy:
