@@ -175,7 +175,12 @@ jobs:
         sudo -u $BUILDER git clone https://github.com/timsaya/luci-app-bandix.git package/luci-app-bandix
         chown -R $BUILDER:$BUILDER $BUILD_DIR
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        # Install feeds to get luac and other tools
+        sudo -u $BUILDER ./scripts/feeds install -a
         sudo -u $BUILDER make defconfig
+        # Build host tools first (luac, po2lmo, etc.)
+        sudo -u $BUILDER make package/luci-base/host/compile V=s -j1
+        sudo -u $BUILDER make package/luci-base/compile V=s -j1
         # Compile backend first (dependency for frontend)
         sudo -u $BUILDER make package/openwrt-bandix/openwrt-bandix/compile V=s -j1
         # Compile frontend
