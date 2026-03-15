@@ -133,11 +133,61 @@ jobs:
         sudo -u $BUILDER make defconfig
         sudo -u $BUILDER make package/luci-theme-argon/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-theme-argon
-        cp bin/packages/*/base/luci-theme-argon*.${{ env.PKG_EXT }} $VOLUME_HOME/luci-theme-argon/ 
+        cp bin/packages/*/base/luci-theme-argon*.${{ env.PKG_EXT }} $VOLUME_HOME/luci-theme-argon/
     - uses: actions/upload-artifact@v4
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-theme-argon
+        retention-days: 7
+
+  build_bandix:
+    needs: [setup]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    name: Build Bandix for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container:
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set package extension
+      run: |
+        if [[ "${{ matrix.version }}" == 24.* ]]; then
+          echo "PKG_EXT=ipk" >> $GITHUB_ENV
+        else
+          echo "PKG_EXT=apk" >> $GITHUB_ENV
+        fi
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR
+        apt-get update
+        apt install sudo -y
+        # Clone both repositories
+        sudo -u $BUILDER git clone https://github.com/timsaya/openwrt-bandix.git package/openwrt-bandix
+        sudo -u $BUILDER git clone https://github.com/timsaya/luci-app-bandix.git package/luci-app-bandix
+        chown -R $BUILDER:$BUILDER $BUILD_DIR
+        while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        sudo -u $BUILDER make defconfig
+        # Compile backend first (dependency for frontend)
+        sudo -u $BUILDER make package/openwrt-bandix/openwrt-bandix/compile V=s -j1
+        # Compile frontend
+        sudo -u $BUILDER make package/luci-app-bandix/luci-app-bandix/compile V=s -j1
+        mkdir -p $VOLUME_HOME/bandix
+        # Copy bandix packages (note: backend package is named 'bandix', not 'openwrt-bandix')
+        cp bin/packages/*/base/bandix*.${{ env.PKG_EXT }} $VOLUME_HOME/bandix/ 2>/dev/null || true
+        cp bin/packages/*/base/luci-app-bandix*.${{ env.PKG_EXT }} $VOLUME_HOME/bandix/ 2>/dev/null || true
+    - uses: actions/upload-artifact@v4
+      with:
+        name: bandix-${{ matrix.arch }}-${{ matrix.version }}
+        path: bandix
         retention-days: 7
   
   # luci app netdata has some bugs, so just not use it for now!
@@ -186,7 +236,7 @@ jobs:
         retention-days: 7
 
   build_image:
-    needs: [setup, build_passwall, build_theme_argon]
+    needs: [setup, build_passwall, build_theme_argon, build_bandix]
     if: ${{ always() }}
     strategy:
       fail-fast: false
@@ -220,6 +270,9 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v4
+      with:
+        name: bandix-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v4
     #   with:
     #     name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
