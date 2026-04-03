@@ -70,7 +70,7 @@ jobs:
         # cp -r bin/packages $VOLUME_HOME/passwall
         tree bin/packages
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
         path: passwall
@@ -91,7 +91,7 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set package extension
       run: |
         if [[ "${{ matrix.version }}" == 25.* ]]; then
@@ -113,7 +113,7 @@ jobs:
         sudo -u $BUILDER make package/luci-theme-argon/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-theme-argon
         cp bin/packages/*/base/luci-theme-argon*.${{ env.PKG_EXT }} $VOLUME_HOME/luci-theme-argon/ 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-theme-argon
@@ -136,7 +136,7 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Run Make
       run: |
         export VOLUME_HOME=$(pwd)
@@ -152,7 +152,7 @@ jobs:
         sudo -u $BUILDER make package/luci-app-netdata/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-app-netdata
         cp bin/packages/*/base/luci-app-netdata*.ipk $VOLUME_HOME/luci-app-netdata/
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-app-netdata
@@ -173,7 +173,7 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set package extension
       run: |
         if [[ "${{ matrix.version }}" == 25.* ]]; then
@@ -206,7 +206,7 @@ jobs:
         cp bin/packages/*/base/sms-tool*.${{ env.PKG_EXT }} $VOLUME_HOME/package_5g/
         cp bin/packages/*/base/sendat*.${{ env.PKG_EXT }} $VOLUME_HOME/package_5g/
         cp bin/packages/*/base/luci-app-zmodem*.${{ env.PKG_EXT }} $VOLUME_HOME/package_5g/ 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: package_5g-${{ matrix.arch }}-${{ matrix.version }}
         path: package_5g
@@ -241,17 +241,17 @@ jobs:
         remove-docker-images: 'true'
 
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: package_5g-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v3
@@ -348,7 +348,7 @@ jobs:
 #                   shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-server simple-obfs
 #                   tcping trojan-plus v2ray-core v2ray-example v2ray-extra v2ray-plugin 
 #                   open-vm-tools
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
         path: openwrt_output
