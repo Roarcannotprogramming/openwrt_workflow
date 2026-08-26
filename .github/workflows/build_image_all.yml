@@ -92,7 +92,7 @@ jobs:
         # cp -r bin/packages $VOLUME_HOME/passwall
         tree bin/packages
 
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
         path: passwall
@@ -134,7 +134,7 @@ jobs:
         sudo -u $BUILDER make package/luci-theme-argon/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-theme-argon
         cp bin/packages/*/base/luci-theme-argon*.${{ env.PKG_EXT }} $VOLUME_HOME/luci-theme-argon/
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-theme-argon
@@ -189,7 +189,7 @@ jobs:
         # Copy bandix packages (note: backend package is named 'bandix', not 'openwrt-bandix')
         cp bin/packages/*/base/bandix*.${{ env.PKG_EXT }} $VOLUME_HOME/bandix/ 2>/dev/null || true
         cp bin/packages/*/base/luci-app-bandix*.${{ env.PKG_EXT }} $VOLUME_HOME/bandix/ 2>/dev/null || true
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: bandix-${{ matrix.arch }}-${{ matrix.version }}
         path: bandix
@@ -234,7 +234,7 @@ jobs:
         sudo -u $BUILDER make package/luci-app-netdata/compile V=s -j1
         mkdir -p $VOLUME_HOME/luci-app-netdata
         cp bin/packages/*/base/luci-app-netdata*.${{ env.PKG_EXT }} $VOLUME_HOME/luci-app-netdata/
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
         path: luci-app-netdata
@@ -311,7 +311,7 @@ jobs:
         cp bin/packages/*/base/*uuplugin*.${{ env.PKG_EXT }} $VOLUME_HOME/uuplugin-out/
         tree bin/packages
         ls -la $VOLUME_HOME/uuplugin-out/
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: uuplugin-${{ matrix.arch }}-${{ matrix.version }}
         path: uuplugin-out
@@ -346,19 +346,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
 
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v8
       with:
         name: passwall-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v8
       with:
         name: luci-theme-argon-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v8
       with:
         name: bandix-${{ matrix.arch }}-${{ matrix.version }}
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v8
       with:
         name: uuplugin-${{ matrix.arch }}-${{ matrix.version }}
-    # - uses: actions/download-artifact@v5
+    # - uses: actions/download-artifact@v8
     #   with:
     #     name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
 
@@ -418,7 +418,7 @@ jobs:
           wpa-supplicant xl2tpd kmod-loop nfs-kernel-server iptables-mod-socket
           iptables-mod-iprange kmod-nft-socket kmod-nft-tproxy kmod-nft-nat
           wireguard-tools kmod-wireguard luci-proto-wireguard wakeonlan luci-app-wol
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
         path: openwrt_output
