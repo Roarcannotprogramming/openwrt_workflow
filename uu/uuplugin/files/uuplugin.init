@@ -1,0 +1,224 @@
+#!/bin/sh /etc/rc.common
+# uuplugin —— 网易 UU 加速器路由器插件（集成层服务，唯一的用户入口）
+#
+# 服务命令之外，设备发现也从这里走（不另设独立命令）：
+#   service uuplugin scan          被动清单：租约+邻居表，标记疑似游戏机
+#   service uuplugin sweep         主动扫描（ping 扫全网段后出清单）
+#   service uuplugin watch [秒]    差分识别：让目标设备重连网络
+#   service uuplugin add <mac> [名字]
+#
+# 启动序：确保本体存在（缺失时经 uu-fetch 在线获取）→ 渲染 PassWall 的
+# "不代理"ACL（luci-app-passwall 是声明依赖，安装有包管理器保证）→
+# 自动识别 → procd 拉起二进制。
+#
+# 二进制以相对路径引用同目录文件（./xuplugin-guardian、./.uuplugin_uuid、
+# ./.sn），必须在 /usr/sbin/uu 目录下运行，因此用 sh -c 先 cd 再 exec。
+#
+# reload 语义：只重渲染 + 重跑自动识别，不动隧道进程。procd 对比实例
+# 参数，参数没变就不重启——改设备列表不打断正在加速的会话。
+
+USE_PROCD=1
+START=99
+
+extra_command "scan" "列出局域网设备并标记疑似游戏机"
+extra_command "sweep" "主动扫描全网段后列出"
+extra_command "watch" "差分识别新设备（可跟观察秒数）"
+extra_command "add" "加入设备并立即生效：add <mac> [名字]"
+
+UU_DIR=/usr/sbin/uu
+LIBEXEC=/usr/libexec/uuplugin
+# guard 的"未验证"标记：uci-defaults 装包时就把 uu zone 与两条 lan↔uu 转发
+# commit 进了防火墙配置，而让它们生效的 reload 要等到下面 ensure_firewall
+# 才发生。在那之前它们没被任何检查点覆盖过（检查点是 reload 前一刻才取的，
+# 里面已经躺着这三段），所以 guard 靠这个标记获得"把它们拆掉"的授权。
+# 撤销授权只能在这里做，默认值必须与 guard、uci-defaults 里的逐字一致。
+UU_UNPROVEN="${UU_GUARD_STATE:-/etc/uuplugin}/firewall.unproven"
+
+ensure_binary() {
+	[ -x "${UU_DIR}/uuplugin" ] && return 0
+	logger -t uuplugin "UU 本体未安装，尝试在线获取"
+	/usr/sbin/uu-fetch || {
+		logger -t uuplugin -p daemon.err "UU 本体获取失败；联网后重试 /etc/init.d/uuplugin start"
+		return 1
+	}
+}
+
+# 首次启用（或改装场景）时防火墙的 uu 链还没渲染进内核：在 guard 保护下
+# reload 一次。镜像正常开机时 fw4 启动即已渲染，那条路径没有 reload 可做，
+# 但仍要补一次出网自检——本函数是全系统唯一撤销 UU_UNPROVEN 的地方，
+# 三条出口的规矩是：证明为好才删，剩下的一律留着让 restore 有权拆。
+ensure_firewall() {
+	[ "$(uci -q get firewall.uu)" = "zone" ] || {
+		logger -t uuplugin -p daemon.err "firewall 里没有 uu zone（uci-defaults 未执行？），跳过"
+		return 1
+	}
+	if nft list chain inet fw4 forward_uu >/dev/null 2>&1; then
+		# 短路：镜像正常开机时 fw4 启动即已渲染，没有 reload 可做。可正因为
+		# 这条路径上从没有人取过检查点、做过验证，uci-defaults 留下的标记
+		# 也就一直没人撤——路由器带着一份从未被证明无害的 ruleset 裸奔。
+		# 这里补上那唯一一次验证：出网还通，才算证明它无害、撤掉安全网；
+		# 不通就把标记留着，让下一次 restore 有权拆掉这三段（此刻不自己动手：
+		# 断网原因未必是我们，而 restore 是有门控、有验证的那条路）。
+		# 标记不在就一个探针都不发：这条路径每次 reload 都会走（wan up 触发器
+		# 一抖就是一次），白探一次 ICMP+HTTP 要把 init 挂住十几秒。
+		if [ -f "$UU_UNPROVEN" ]; then
+			if "${LIBEXEC}/guard" health; then
+				rm -f "$UU_UNPROVEN"
+				logger -t uuplugin "防火墙 uu 链已在内核中且出网正常，撤除未验证标记"
+			else
+				logger -t uuplugin -p daemon.warn "防火墙 uu 链已在内核中但出网自检失败，保留未验证标记（回滚时将拆除 uu zone 与 lan↔uu 转发）"
+			fi
+		fi
+		return 0
+	fi
+
+	# 先渲染校验再 reload：check 只渲染不下发，不过审就根本不碰运行时
+	if ! fw4 check >/dev/null 2>&1; then
+		logger -t uuplugin -p daemon.err "fw4 check 未通过，拒绝 reload；请检查 /etc/config/firewall"
+		return 1
+	fi
+
+	logger -t uuplugin "防火墙 uu 链未生效，执行受保护的 fw4 reload"
+	"${LIBEXEC}/guard" protect
+	if fw4 reload &&
+		nft list chain inet fw4 forward_uu >/dev/null 2>&1 &&
+		"${LIBEXEC}/guard" health; then
+		"${LIBEXEC}/guard" commit
+		# 撤销安全网必须由这里做，绝不能塞进 guard commit：start_service 是
+		# 先 render 后 ensure_firewall，而 render 成功重启 PassWall 时同样会
+		# 调 guard commit——那会儿本函数的 fw4 reload 还没发生，标记会被提前
+		# 清掉，整套兜底当场作废且毫无痕迹。
+		rm -f "$UU_UNPROVEN"
+		logger -t uuplugin "防火墙 uu 链已生效"
+		return 0
+	fi
+	logger -t uuplugin -p daemon.crit "fw4 reload 后校验失败，回滚"
+	"${LIBEXEC}/guard" restore
+	return 1
+}
+
+start_service() {
+	local enabled
+	config_load uuplugin
+	config_get_bool enabled main enabled 1
+
+	# 渲染必须先于 enabled 判断：main.enabled=0 时 render 会清掉 PassWall
+	# 里的 ACL（设备回到 PassWall），否则"关闭 uuplugin"会留下 ACL 残留
+	"${LIBEXEC}/render" ||
+		logger -t uuplugin -p daemon.warn "设备列表渲染存在失败项，详见日志"
+
+	[ "$enabled" -eq 1 ] || return 0
+
+	ensure_firewall || return 1
+	ensure_binary || return 1
+
+	"${LIBEXEC}/scan" auto ||
+		logger -t uuplugin -p daemon.warn "自动设备识别失败"
+
+	# 插件把自升级包、崩溃转储等临时文件放在 /tmp/uu
+	mkdir -p /tmp/uu
+
+	procd_open_instance
+	procd_set_param command /bin/sh -c "cd $UU_DIR && exec ./uuplugin ./uu.conf"
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+
+	# 二进制是异步拉起的闭源程序：guard_timeout 后自检一次，断网则停用
+	# uuplugin（它下的规则随进程退出即消失，无需动配置）
+	"${LIBEXEC}/guard" watch
+}
+
+service_triggers() {
+	procd_add_reload_trigger "uuplugin"
+	# 首启竞态兜底：START=99 时 wan 可能还没拿到 DHCP，uu-fetch 会失败。
+	# wan 起来时 reload 一次——本体缺失则重试获取并起服务；已在跑则幂等无扰。
+	#
+	# 接口逻辑名可配：UU_WAN_IFACE > uuplugin.main.wan_iface > wan。用
+	# uci -q get 直读而不 config_load：清空 CONFIG_SECTIONS 的是 uci 包
+	# /lib/config/uci.sh 里的 uci_load（CONFIG_APPEND 为空时置空重建），
+	# 值读完就落普通变量、当场不会坏，但 config_load 会埋下"谁挪了调用次序
+	# 就无声坏掉"的顺序依赖——直连 uci 根本不建立这个依赖。
+	#
+	# 变量传给 procd_add_interface_trigger 有两层风险，缺一道都不行：
+	#   * 漏引号且值为空 → 参数左移：接口位变成 /etc/init.d/uuplugin、命令
+	#     只剩 reload，procd 会去 exec 一个叫 reload 的文件——触发器无声失效；
+	#   * 光加引号不够：引号只是把左移变成"接口名为空、永不匹配"，触发器照样
+	#     无声失效。真正兜住空值的是校验——合法模式是 [A-Za-z0-9_]+，+ 要求
+	#     至少一个字符，空值不满足，按未设处理静默回落 wan（未设是常态，不
+	#     告警）；非空但含非法字符则回落 wan 并 warn。
+	local WAN_IFACE
+	WAN_IFACE="${UU_WAN_IFACE:-$(uci -q get uuplugin.main.wan_iface)}"
+	case "$WAN_IFACE" in
+	'') WAN_IFACE=wan ;;
+	*[!A-Za-z0-9_]*)
+		logger -t uuplugin -p daemon.warn \
+			"uuplugin.main.wan_iface='${WAN_IFACE}' 含非法字符（须匹配 [A-Za-z0-9_]+），回落到 wan"
+		WAN_IFACE=wan
+		;;
+	esac
+	procd_add_interface_trigger "interface.*.up" "$WAN_IFACE" /etc/init.d/uuplugin reload
+}
+
+# reload = 重跑 start_service：渲染、自动识别、重declare 实例都在里面；
+# procd 对比实例参数，没变就不动进程（改设备列表不打断加速会话），
+# enabled 翻转则相应启/停
+reload_service() {
+	start
+}
+
+scan() { "${LIBEXEC}/scan" list "$@"; }
+sweep() { "${LIBEXEC}/scan" sweep "$@"; }
+watch() { "${LIBEXEC}/scan" watch "$@"; }
+add() { "${LIBEXEC}/scan" add "$@"; }
+
+# rc.common 对 procd 脚本的 status 由 status_service 钩子扩展（直接定义
+# status() 会被 rc.common 在 source 之后重定义覆盖，真机踩过）
+# （这些检查此前只能靠手敲命令逐项看，固化于此）
+status_service() {
+	local pid="" p v
+	for p in /proc/[0-9]*; do
+		[ "$(readlink "$p/exe" 2>/dev/null)" = "${UU_DIR}/uuplugin" ] &&
+			pid="${p#/proc/}" && break
+	done
+	if [ -n "$pid" ]; then
+		echo "服务:      运行中（PID ${pid}）"
+	else
+		echo "服务:      未运行"
+	fi
+	v=$(sed -n 's/^version=//p' "${UU_DIR}/uu.conf" 2>/dev/null)
+	echo "UU 本体:   ${v:-未安装}"
+	if [ -f "${UU_DIR}/.uuplugin_uuid" ]; then
+		echo "绑定身份:  已生成（sysupgrade 保留）"
+	else
+		echo "绑定身份:  尚未生成（首次运行后出现）"
+	fi
+	if nft list chain inet fw4 forward_uu >/dev/null 2>&1; then
+		echo "fw4 zone:  已生效（tun* 通配）"
+	else
+		echo "fw4 zone:  未生效！service uuplugin start 会修复"
+	fi
+	# ACL 是匿名段，按 remarks 锚定（与 render 一致）
+	local acl_sid="" s
+	for s in $(uci show passwall 2>/dev/null | grep "=acl_rule$" |
+		cut -d '.' -sf 2 | cut -d '=' -sf 1); do
+		[ "$(uci -q get "passwall.${s}.remarks")" = "uuplugin" ] && {
+			acl_sid="$s"
+			break
+		}
+	done
+	if [ -n "$acl_sid" ]; then
+		echo "PassWall:  ACL enabled=$(uci -q get "passwall.${acl_sid}.enabled")，来源=$(uci -q get "passwall.${acl_sid}.sources" || echo 空)"
+	else
+		echo "PassWall:  尚无 ACL 段（未配置设备时属正常）"
+	fi
+	echo "tun 设备:  $(ip -br link 2>/dev/null | grep -o "^tun[^ @]*" | tr "\n" " " | grep . || echo "无（App 开始加速后出现）")"
+	echo "加速路由:  $(ip rule show | grep -c fwmark) 条 fwmark 规则"
+	echo "XU 自建表: $(nft list tables 2>/dev/null | grep -c XU_ACC_MAIN) 张"
+	if "${LIBEXEC}/guard" health; then
+		echo "出网自检:  通过"
+	else
+		echo "出网自检:  失败!"
+	fi
+}

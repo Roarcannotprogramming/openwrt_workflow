@@ -1,0 +1,31 @@
+{
+	"admin/services/uuplugin": {
+		"title": "UU Accelerator",
+		"order": 60,
+		"action": {
+			"type": "firstchild"
+		},
+		"depends": {
+			"acl": [ "luci-app-uuplugin" ],
+			"uci": { "uuplugin": true }
+		}
+	},
+
+	"admin/services/uuplugin/overview": {
+		"title": "Status",
+		"order": 10,
+		"action": {
+			"type": "view",
+			"path": "uuplugin/overview"
+		}
+	},
+
+	"admin/services/uuplugin/config": {
+		"title": "Configuration",
+		"order": 20,
+		"action": {
+			"type": "view",
+			"path": "uuplugin/config"
+		}
+	}
+}

@@ -1,0 +1,3 @@
+# sysupgrade 时保留 UU 的设备身份，否则升级固件后 App 侧绑定失效需重绑
+/usr/sbin/uu/.uuplugin_uuid
+/usr/sbin/uu/.sn

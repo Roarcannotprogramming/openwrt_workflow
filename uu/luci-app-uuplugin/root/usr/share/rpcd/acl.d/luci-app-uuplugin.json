@@ -1,0 +1,22 @@
+{
+	"luci-app-uuplugin": {
+		"description": "Grant access to LuCI app uuplugin",
+		"read": {
+			"uci": [ "uuplugin", "firewall", "passwall" ],
+			"ubus": {
+				"service": [ "list" ],
+				"rc": [ "list" ],
+				"network.device": [ "status" ],
+				"log": [ "read" ],
+				"file": [ "stat" ]
+			},
+			"file": {
+				"/etc/uuplugin/firewall.unproven": [ "read", "list" ],
+				"/etc/uuplugin/checkpoint/.active": [ "read", "list" ]
+			}
+		},
+		"write": {
+			"uci": [ "uuplugin" ]
+		}
+	}
+}

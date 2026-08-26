@@ -1,0 +1,166 @@
+#!/bin/sh
+# uu-fetch —— 在线获取网易 UU 加速器本体到 /usr/sbin/uu
+#
+# 模型：不固化版本。每次按官方 API 取"当前版"，完整性用同一 API（优先
+# https）返回的 md5 校验。已安装则默认跳过；--force 强制重取（安全替换
+# 正在运行的二进制：同文件系统内先写 .new 再 rename，避免 ETXTBSY）。
+# 插件装好之后的版本演进由其自身的自升级机制负责。
+#
+# 用法：
+#   uu-fetch            未安装时安装，已安装则跳过
+#   uu-fetch --force    无条件重取当前版
+#   uu-fetch --check    只对比本地与远端版本，不下载
+#
+# 退出码：0 成功/无事可做；1 失败（--check 时 1 表示版本不一致）
+
+set -u
+
+UU_DIR="${UU_DIR:-/usr/sbin/uu}"
+# 官方分发入口。留出覆盖口子不是为了换源（包体 md5 由同一 API 给出，换源
+# 等于自签自校），而是为了内网镜像与离线测试能指到自己的服务器
+API_HOST="${UU_API_HOST:-router.uu.163.com}"
+FORCE=0
+CHECK=0
+
+log() { logger -s -t uu-fetch "$*"; }
+
+# 从第 2 行打到第一行非注释为止，不写死行号（改了头部就对不上，还没人发现）
+usage() {
+	awk 'NR==1{next} !/^#/{exit} {sub(/^# ?/, ""); print}' "$0"
+}
+
+case "${1:-}" in
+--force) FORCE=1 ;;
+--check) CHECK=1 ;;
+-h | --help)
+	usage
+	exit 0
+	;;
+"") ;;
+*)
+	usage
+	exit 1
+	;;
+esac
+
+# ---------------------------------------------------------------------------
+
+uu_arch() {
+	local a
+	a=$(. /etc/openwrt_release 2>/dev/null && printf '%s' "${DISTRIB_ARCH:-}")
+	case "$a" in
+	x86_64) echo x86_64 ;;
+	aarch64*) echo aarch64 ;;
+	mipsel*) echo mipsel ;;
+	arm*) echo arm ;;
+	*)
+		log "不支持的架构：${a:-未知}"
+		return 1
+		;;
+	esac
+}
+
+fetch() { # $1=url $2=输出文件 [$3=超时秒，默认 120]
+	# CDN 偶发 stall，大文件给足时间；API 调用方自行传短超时
+	uclient-fetch -q -O "$2" --timeout="${3:-120}" "$1" 2>/dev/null
+}
+
+local_version() {
+	sed -n 's/^version=v\{0,1\}//p' "${UU_DIR}/uu.conf" 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
+
+ARCH=$(uu_arch) || exit 1
+
+if [ "$CHECK" -eq 0 ] && [ "$FORCE" -eq 0 ] && [ -x "${UU_DIR}/uuplugin" ]; then
+	exit 0
+fi
+
+WORK=$(mktemp -d /tmp/uu-fetch.XXXXXX) || exit 1
+trap 'rm -rf "$WORK"' EXIT INT TERM
+
+# API：md5 的信任锚。优先 https（TLS 保证 md5 未被篡改），失败退 http。
+# API 响应很小，短超时即可，避免 https 挂死拖慢整体
+if ! fetch "https://${API_HOST}/api/plugin?type=openwrt-${ARCH}" "${WORK}/api.json" 15; then
+	log "https API 不可达，退回 http（完整性校验退化为防传输损坏）"
+	fetch "http://${API_HOST}/api/plugin?type=openwrt-${ARCH}" "${WORK}/api.json" 15 || {
+		log "官方 API 不可达"
+		exit 1
+	}
+fi
+
+URL=$(jsonfilter -i "${WORK}/api.json" -e '@.url') || URL=
+URL_BAK=$(jsonfilter -i "${WORK}/api.json" -e '@.url_bak') || URL_BAK=
+MD5=$(jsonfilter -i "${WORK}/api.json" -e '@.md5') || MD5=
+[ -n "$URL" ] && [ -n "$MD5" ] || {
+	log "API 响应无法解析"
+	exit 1
+}
+REMOTE_VER=$(printf '%s' "$URL" | sed -n 's|.*/v\([0-9][0-9.]*\)/.*|\1|p')
+
+if [ "$CHECK" -eq 1 ]; then
+	# 注意 sed -n 无匹配也返回 0，须按输出判空而非退出码
+	LOCAL_VER=$(local_version)
+	printf '本地：%s\n远端：%s\n' "${LOCAL_VER:-未安装}" "${REMOTE_VER:-未知}"
+	[ -n "$LOCAL_VER" ] && [ "$LOCAL_VER" = "$REMOTE_VER" ]
+	exit $?
+fi
+
+log "获取 UU 本体 v${REMOTE_VER:-?}（openwrt-${ARCH}）"
+# CDN 单点会 stall：主备轮换各试两次
+DOWNLOADED=0
+for u in "$URL" "$URL_BAK" "$URL" "$URL_BAK"; do
+	[ -n "$u" ] || continue
+	if fetch "$u" "${WORK}/uu.tar.gz"; then
+		DOWNLOADED=1
+		break
+	fi
+	log "本次下载未完成，换源重试"
+done
+[ "$DOWNLOADED" -eq 1 ] || {
+	log "下载失败（主备各试两次）"
+	exit 1
+}
+
+GOT_MD5=$(md5sum "${WORK}/uu.tar.gz" | cut -d' ' -f1)
+[ "$GOT_MD5" = "$MD5" ] || {
+	log "md5 校验失败：期望 ${MD5}，实际 ${GOT_MD5}"
+	exit 1
+}
+
+mkdir -p "${WORK}/x"
+tar -xzf "${WORK}/uu.tar.gz" -C "${WORK}/x" || {
+	log "解包失败"
+	exit 1
+}
+[ -s "${WORK}/x/uuplugin" ] || {
+	log "包内没有 uuplugin，上游布局变了？"
+	exit 1
+}
+# ELF 魔数校验不依赖 od/hexdump（BusyBox 裁剪不一）：
+# 前 4 字节 0x7f 'E' 'L' 'F' 都是非 NUL 字节，可安全进 shell 变量比较
+[ "$(head -c 4 "${WORK}/x/uuplugin")" = "$(printf '\177ELF')" ] || {
+	log "uuplugin 不是 ELF 文件，拒绝安装"
+	exit 1
+}
+
+# 安装：逐个文件同目录 .new + rename，替换运行中的二进制也安全（不会 ETXTBSY）。
+# 上游有什么装什么（布局可能随版本变化），隐藏文件（设备身份 .uuplugin_uuid
+# 等）不在包里，天然不受影响。
+mkdir -p "$UU_DIR"
+for f in "${WORK}/x/"*; do
+	base=$(basename "$f")
+	cp "$f" "${UU_DIR}/.new.${base}" || {
+		log "写入 ${base} 失败"
+		exit 1
+	}
+	if [ -x "$f" ]; then chmod 0755 "${UU_DIR}/.new.${base}"; else chmod 0644 "${UU_DIR}/.new.${base}"; fi
+	mv "${UU_DIR}/.new.${base}" "${UU_DIR}/${base}" || {
+		log "安装 ${base} 失败"
+		exit 1
+	}
+done
+
+log "已安装 UU 本体 v${REMOTE_VER:-?} 到 ${UU_DIR}"
+exit 0

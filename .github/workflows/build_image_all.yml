@@ -240,8 +240,85 @@ jobs:
         path: luci-app-netdata
         retention-days: 7
 
+  # uuplugin 测试套件（uu/uuplugin/tests，434 断言，纯 shell 无需 SDK）。
+  # 作为 build_uuplugin 的前置门禁：套件红 -> 不出包 -> build_image 下载
+  # artifact 失败 -> 镜像不出。不改动其它 job 的 always() 语义。
+  test_uuplugin:
+    name: UUplugin test suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v5
+    - name: Run suite
+      run: |
+        cd uu/uuplugin/tests
+        sh run.sh
+
+  build_uuplugin:
+    needs: [setup, test_uuplugin]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    name: Build UUplugin for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container:
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set package extension
+      run: |
+        if [[ "${{ matrix.version }}" == 24.* ]]; then
+          echo "PKG_EXT=ipk" >> $GITHUB_ENV
+        else
+          echo "PKG_EXT=apk" >> $GITHUB_ENV
+        fi
+    - name: Run Make
+      run: |
+        export VOLUME_HOME=$(pwd)
+        export BUILD_DIR="/builder"
+        export BUILDER="buildbot"
+        cd $BUILD_DIR
+        apt-get update
+        apt install sudo tree -y
+        # uuplugin DEPENDS +luci-app-passwall：编包只需要 feed 元数据能把依赖
+        # 解析出来；真正的 passwall 包由 build_passwall 任务产出并一起进镜像
+        sudo -u $BUILDER echo "src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;main" >> "feeds.conf.default"
+        sudo -u $BUILDER echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
+        cp -r $VOLUME_HOME/uu/uuplugin-bin package/uuplugin-bin
+        cp -r $VOLUME_HOME/uu/uuplugin package/uuplugin
+        cp -r $VOLUME_HOME/uu/luci-app-uuplugin package/luci-app-uuplugin
+        chown -R $BUILDER:$BUILDER $BUILD_DIR
+        while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        sudo -u $BUILDER ./scripts/feeds install -a
+        sudo -u $BUILDER make defconfig
+        # Build host tools first (luac, po2lmo, etc.) — same fix as build_bandix
+        sudo -u $BUILDER make package/luci-base/host/compile V=s -j1
+        sudo -u $BUILDER make package/luci-base/compile V=s -j1
+        sudo -u $BUILDER make package/uuplugin-bin/compile V=s -j1
+        sudo -u $BUILDER make package/uuplugin/compile V=s -j1
+        sudo -u $BUILDER make package/luci-app-uuplugin/compile V=s -j1
+        mkdir -p $VOLUME_HOME/uuplugin-out
+        # 一个 glob 收四个包：uuplugin-bin / uuplugin / luci-app-uuplugin /
+        # luci-i18n-uuplugin-zh-cn（luci.mk 派生的中文包；本目录整体进
+        # mypackages，即随镜像强装，无需改 PACKAGES 列表）。刻意不加
+        # "|| true"：收不到包就该红在这里，而不是静默产出一个没有 uu 的镜像
+        cp bin/packages/*/base/*uuplugin*.${{ env.PKG_EXT }} $VOLUME_HOME/uuplugin-out/
+        tree bin/packages
+        ls -la $VOLUME_HOME/uuplugin-out/
+    - uses: actions/upload-artifact@v5
+      with:
+        name: uuplugin-${{ matrix.arch }}-${{ matrix.version }}
+        path: uuplugin-out
+        retention-days: 7
+
   build_image:
-    needs: [setup, build_passwall, build_theme_argon, build_bandix]
+    needs: [setup, build_passwall, build_theme_argon, build_bandix, build_uuplugin]
     if: ${{ always() }}
     strategy:
       fail-fast: false
@@ -278,6 +355,9 @@ jobs:
     - uses: actions/download-artifact@v5
       with:
         name: bandix-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v5
+      with:
+        name: uuplugin-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v5
     #   with:
     #     name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}

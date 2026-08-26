@@ -1,0 +1,234 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-uuplugin\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:118
+msgid "A guard rollback disables the service; after investigating, run: /etc/init.d/uuplugin enable && /etc/init.d/uuplugin start"
+msgstr "guard 回滚会停用本服务；排查后执行 /etc/init.d/uuplugin enable && /etc/init.d/uuplugin start 恢复"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:70
+msgid "Accelerated Devices"
+msgstr "加速设备"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:194
+msgid "Acceleration tunnels"
+msgstr "加速隧道"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:143
+msgid "All three present (uu zone, lan_uu, uu_lan)"
+msgstr "三段齐全（uu zone、lan_uu、uu_lan）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:155
+msgid "Armed: a dangerous change is inside its unconfirmed window (or a previous change never finished)"
+msgstr "布防中：有危险变更处于未确认窗口（或上次变更未收尾）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:35
+msgid "Auto-add Nintendo devices"
+msgstr "自动加入任天堂设备"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:31
+msgid "Auto-detect consoles"
+msgstr "自动识别游戏机"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:36
+msgid "Automatically add devices matching a Nintendo OUI. Warning: an auto-added device automatically leaves PassWall, which changes its traffic path. Enable with care."
+msgstr "命中任天堂 OUI 的设备自动加入加速。警示：自动加入 = 该设备自动脱离 PassWall，属于改变流量路径的动作，默认关闭，慎开。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:165
+msgid "Bypass ACL not rendered"
+msgstr "绕行 ACL 未渲染"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:165
+msgid "Bypass ACL rendered"
+msgstr "绕行 ACL 已渲染"
+
+#: package/luci-app-uuplugin/root/usr/share/luci/menu.d/luci-app-uuplugin.json:24
+msgid "Configuration"
+msgstr "配置"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:40
+msgid "Dead-man switch: after a dangerous change, if it is not confirmed within this many seconds and the network is down, the change is rolled back automatically."
+msgstr "死人开关：危险变更后此秒数内未确认且断网则自动回滚。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:23
+msgid "Device list and switches for the NetEase UU accelerator / PassWall coexistence layer. Dynamic configuration lives in /etc/config/uuplugin; the firewall zone and the PassWall bypass ACL are rendered from it by the uuplugin service."
+msgstr "网易 UU 加速器 / PassWall 共存层的设备列表与开关。动态配置的唯一入口是 /etc/config/uuplugin；防火墙 zone 与 PassWall 绕行 ACL 由 uuplugin 服务据此渲染。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:71
+msgid "Devices accelerated by UU; they bypass PassWall at the same time. After Save & Apply a procd reload re-renders the PassWall bypass ACL: PassWall is restarted and proxy clients lose connectivity for a few seconds."
+msgstr "走 UU 加速的设备，这些设备会同时绕过 PassWall。保存并应用后由 procd reload 触发重渲染：PassWall 会被重启，代理客户端瞬断数秒。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:116
+msgid "Disabled"
+msgstr "已停用"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:78
+msgid "Edit device"
+msgstr "编辑设备"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:28
+msgid "Enable"
+msgstr "启用"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:92
+msgid "Enabled"
+msgstr "启用"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:113
+msgid "Enabled on boot"
+msgstr "已启用"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:196
+msgid "Firewall & PassWall"
+msgstr "防火墙与 PassWall"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:198
+msgid "Firewall sections (config layer)"
+msgstr "防火墙三段（配置层）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:26
+msgid "Global Settings"
+msgstr "全局设置"
+
+#: package/luci-app-uuplugin/root/usr/share/rpcd/acl.d/luci-app-uuplugin.json:3
+msgid "Grant access to LuCI app uuplugin"
+msgstr "授予 LuCI 应用 uuplugin 的访问权限"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:200
+msgid "Guard checkpoint"
+msgstr "guard 布防"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:39
+msgid "Guard timeout (seconds)"
+msgstr "死人开关超时（秒）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:55
+msgid "HTTP probe URLs for the egress health check; ICMP and HTTP probes count as healthy if either passes. Leave empty for the built-in defaults."
+msgstr "出网自检的 HTTP 探针 URL；ICMP 与 HTTP 任一通过即算正常（防 ICMP 限流误判）。不设则用内置默认。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:54
+msgid "Health check URLs (HTTP)"
+msgstr "出网自检 URL（HTTP）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:49
+msgid "Health check targets (ICMP)"
+msgstr "出网自检目标（ICMP）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:50
+msgid "ICMP probe targets for the egress health check; ICMP and HTTP probes count as healthy if either passes. Leave empty for the built-in defaults."
+msgstr "出网自检的 ICMP 探针目标；ICMP 与 HTTP 任一通过即算正常（防 ICMP 限流误判）。不设则用内置默认。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:58
+msgid "LAN interface"
+msgstr "LAN 接口"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:186
+msgid "Log unavailable (no permission or logd not running)"
+msgstr "日志不可用（无权限或 logd 未运行）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:83
+msgid "MAC address"
+msgstr "MAC 地址"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:142
+msgid "Missing: %s"
+msgstr "缺失：%s"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:81
+msgid "Name"
+msgstr "名称"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:183
+msgid "No uuplugin log entries"
+msgstr "暂无 uuplugin 相关日志"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:131
+msgid "None (not accelerating)"
+msgstr "无（未在加速）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:156
+msgid "Not armed"
+msgstr "未布防"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:150
+msgid "Not present"
+msgstr "不存在"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:106
+msgid "Not running"
+msgstr "未运行"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:201
+msgid "PassWall integration"
+msgstr "PassWall 联动"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:44
+msgid "PassWall restart wait limit (seconds)"
+msgstr "PassWall 重启等待上限（秒）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:149
+msgid "Present: committed to persistent configuration but never passed an egress health check; a guard rollback is authorized to remove the three sections"
+msgstr "存在：三段已入持久配置但从未通过出网自检；guard 回滚时有权拆除"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:220
+msgid "Read-only status panel; refreshes every 5 seconds and performs no action on the router."
+msgstr "只读状态面板：每 5 秒刷新，不对路由器执行任何动作。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:203
+msgid "Recent Log"
+msgstr "最近日志"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:106
+msgid "Running (PID %s)"
+msgstr "运行中（PID %s）"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:192
+msgid "Running state"
+msgstr "服务运行"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:190
+msgid "Service"
+msgstr "服务"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:193
+msgid "Start on boot"
+msgstr "开机自启"
+
+#: package/luci-app-uuplugin/root/usr/share/luci/menu.d/luci-app-uuplugin.json:15
+msgid "Status"
+msgstr "状态"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:22
+#: package/luci-app-uuplugin/root/usr/share/luci/menu.d/luci-app-uuplugin.json:3
+msgid "UU Accelerator"
+msgstr "UU 加速器"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:218
+msgid "UU Accelerator Status"
+msgstr "UU 加速器状态"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:199
+msgid "Unproven firewall marker"
+msgstr "未验证标记"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:45
+msgid "Upper bound in seconds to wait for the inet passwall table to come back after PassWall is restarted; it is a deadline, not a fixed delay. If a slow device (e.g. MT7621) gets misjudged as a failed restart, raise it to 60."
+msgstr "重启 PassWall 后等待 inet passwall 表回来的上限秒数；是上限不是定长等待。慢设备（MT7621 等）被误判为重启失败时抬到 60。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:63
+msgid "WAN interface"
+msgstr "WAN 接口"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:32
+msgid "When a suspected game console appears on the LAN, write a hint to the system log."
+msgstr "发现疑似游戏机时写日志提示。"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:59
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:64
+msgid "netifd logical interface name (not the device name); only needed on systems where the default interface naming was changed."
+msgstr "netifd 逻辑接口名（不是设备名）；只有改过默认接口命名的系统才需要设。"

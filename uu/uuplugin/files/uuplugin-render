@@ -1,0 +1,286 @@
+#!/bin/sh
+# render —— 把 /etc/config/uuplugin 的设备列表渲染成 PassWall 的"不代理"ACL
+#
+# PassWall（luci-app-passwall）是 uuplugin 的声明依赖，安装由包管理器保证，
+# 因此配置文件缺失按异常处理（报错退出），不是可选路径。
+# "装了但没在运行"则是正常状态：只落配置，等它下次启动自取。
+#
+# 为什么装了就必须渲染：PassWall（inet passwall 表）与 UU（iptables-nft
+# 兼容层）的规则位于同一 hook 的不同 base chain 上，互相独立；UU 自己下的
+# RETURN 绕不开 PassWall 的重定向，必须在 PassWall 侧显式放行。
+#
+# 语义：
+#   * 以"remarks=uuplugin 的匿名 acl_rule 段"为锚点，整段由本脚本独占维护。
+#     必须匿名：PassWall app.sh 的启用总闸（grep "@acl_rule"）只统计匿名段，
+#     命名段会被整体无视、规则永不渲染（真机实锤，其迭代逻辑却支持命名段）
+#   * 字段取值来自 PassWall load_acl()：tcp/udp_no_redir_ports 全端口生成
+#     无条件 RETURN；proxy_drop_ports 置 disable 防全局 QUIC 丢弃波及游戏机
+#   * 幂等：先比对现状，无差异则不写配置、不动 PassWall
+#   * 只有"有运行时效果"的变更（启用态参与）才重启 PassWall
+#
+# 退出码：0=成功（含无事可做）；1=存在非法 MAC 或渲染/重启失败
+
+# 不开 set -u：/lib/functions.sh 非 nounset-clean（裸引用 IPKG_INSTROOT 等），
+# source 即炸。防御靠显式默认值与引号。
+
+. /lib/functions.sh
+
+REMARKS=uuplugin
+
+# 锚定：在匿名 acl_rule 段里按 remarks 找到"我们的"那段
+find_sid() {
+	local s
+	for s in $(uci show passwall 2>/dev/null | grep "=acl_rule$" |
+		cut -d '.' -sf 2 | cut -d '=' -sf 1); do
+		if [ "$(uci -q get "passwall.${s}.remarks")" = "$REMARKS" ] &&
+			[ "$s" != "uuplugin" ]; then
+			printf '%s' "$s"
+			return 0
+		fi
+	done
+	return 0
+}
+
+# ---------------------------------------------------------------------------
+# 收集并校验目标设备
+# ---------------------------------------------------------------------------
+
+SOURCES=""
+INVALID=0
+
+_hex2='[0-9a-fA-F][0-9a-fA-F]'
+
+append_device() {
+	local sec="$1" enabled mac name
+	config_get_bool enabled "$sec" enabled 1
+	[ "$enabled" -eq 1 ] || return 0
+	config_get mac "$sec" mac
+	config_get name "$sec" name "$sec"
+
+	# shellcheck disable=SC2254  # case 模式来自变量展开，属预期用法
+	case "$mac" in
+	${_hex2}:${_hex2}:${_hex2}:${_hex2}:${_hex2}:${_hex2}) ;;
+	*)
+		logger -t uuplugin -p daemon.err "设备 ${name} 的 MAC 无效：'${mac}'，已跳过"
+		INVALID=1
+		return 0
+		;;
+	esac
+
+	# 统一小写，保证同一 MAC 的大小写变化不会被误判为配置变更。
+	# 写入 sources 的必须是裸 MAC：PassWall 用 ip_or_mac() 自行分类并在
+	# 内部 source_list 里加 "mac:" 前缀；若 UCI 里就带前缀，分类两边不认，
+	# source_list 为空，规则整段不渲染（真机实锤）
+	mac=$(printf '%s' "$mac" | tr 'A-F' 'a-f')
+	SOURCES="${SOURCES} ${mac}"
+}
+
+config_load uuplugin
+
+# main.enabled=0 表示整个集成关闭：有效设备列表为空 → ACL 会被置为禁用，
+# 设备回到 PassWall。少了这一步，"关闭 uuplugin"会留下 ACL 残留。
+MAIN_ENABLED=1
+config_get_bool MAIN_ENABLED main enabled 1
+[ "$MAIN_ENABLED" -eq 1 ] && config_foreach append_device device
+SOURCES="${SOURCES# }"
+
+# 无论走哪条退出路径，存在非法 MAC 都要以非 0 退出提醒配置有错
+finish() {
+	[ "$INVALID" -eq 0 ] && exit 0 || exit 1
+}
+
+# ---------------------------------------------------------------------------
+# 渲染 PassWall ACL
+# ---------------------------------------------------------------------------
+
+if [ ! -f /etc/config/passwall ]; then
+	logger -t uuplugin -p daemon.err "缺少 /etc/config/passwall：luci-app-passwall 是 uuplugin 的声明依赖，环境异常"
+	exit 1
+fi
+
+if [ -n "$SOURCES" ]; then
+	WANT_ENABLED=1
+else
+	WANT_ENABLED=0
+fi
+
+# 目标字段（除 sources 外全部为固定值）
+want() {
+	cat <<-EOF
+		enabled=$WANT_ENABLED
+		remarks=uuplugin
+		tcp_no_redir_ports=1:65535
+		udp_no_redir_ports=1:65535
+		tcp_proxy_mode=disable
+		udp_proxy_mode=disable
+		tcp_proxy_drop_ports=disable
+		udp_proxy_drop_ports=disable
+		use_global_config=0
+		use_direct_list=0
+		use_proxy_list=0
+		use_block_list=0
+		use_gfw_list=0
+	EOF
+}
+
+# 迁移：删除早期版本创建的命名段（PassWall 总闸看不见它，纯死重）
+if [ "$(uci -q get passwall.uuplugin)" = "acl_rule" ]; then
+	uci -q delete passwall.uuplugin
+	uci -q commit passwall
+	logger -t uuplugin "已迁移：移除失效的命名 ACL 段，改用匿名段"
+fi
+
+SID=$(find_sid)
+changed=0
+OLD_ENABLED=0
+
+if [ -z "$SID" ]; then
+	changed=1
+else
+	# 变更前的启用状态：与 WANT_ENABLED 一起决定这次变更有没有"运行时
+	# 效果"。禁用→禁用（例如首次创建骨架段）只落配置，不重启 PassWall。
+	OLD_ENABLED=$(uci -q get "passwall.${SID}.enabled") || OLD_ENABLED=0
+
+	while IFS='=' read -r k v; do
+		[ "$(uci -q get "passwall.${SID}.${k}")" = "$v" ] || changed=1
+	done <<-EOF
+		$(want)
+	EOF
+
+	# uci get 对 list 输出空格连接的值，与 SOURCES 的构造方式一致
+	[ "$(uci -q get "passwall.${SID}.sources")" = "$SOURCES" ] || changed=1
+fi
+
+# 全局 ACL 总开关只在确有设备时才要求打开；空列表时不去动用户的全局设置
+if [ "$WANT_ENABLED" -eq 1 ] &&
+	[ "$(uci -q get passwall.@global[0].acl_enable)" != "1" ]; then
+	changed=1
+fi
+
+[ "$changed" -eq 0 ] && finish
+
+# 不存在则新建匿名段（uci add 返回内部 cfg id，可直接用于 get/set）
+[ -n "$SID" ] || SID=$(uci add passwall acl_rule)
+
+ok=1
+while IFS='=' read -r k v; do
+	uci -q set "passwall.${SID}.${k}=${v}" || ok=0
+done <<-EOF
+	$(want)
+EOF
+
+uci -q delete "passwall.${SID}.sources"
+for s in $SOURCES; do
+	uci -q add_list "passwall.${SID}.sources=${s}" || ok=0
+done
+
+[ "$WANT_ENABLED" -eq 1 ] && uci -q set 'passwall.@global[0].acl_enable=1'
+
+if ! uci -q commit passwall || [ "$ok" -ne 1 ]; then
+	logger -t uuplugin -p daemon.err "写入 passwall 配置失败"
+	exit 1
+fi
+
+# 禁用→禁用的变更（骨架创建、空列表下的字段修补）没有运行时效果，
+# 只落配置即可，绝不打扰正在运行的代理
+if [ "$WANT_ENABLED" -eq 0 ] && [ "${OLD_ENABLED:-0}" != "1" ]; then
+	logger -t uuplugin "PassWall ACL 骨架已写入（禁用态，无运行时影响）"
+	finish
+fi
+
+# 有运行时效果的变更：PassWall 在运行（nft 表存在）才需要重启使规则生效；
+# 否则等它下次启动自取。重启在 guard 保护下执行：重启后 PassWall 表没回来
+# 或断网 → 还原配置回滚；本进程死在半路 → guard 的延时校验替我们回滚
+# restart 后接 1000>&-：rc.common 用 fd 1000 持有本服务的 flock，从 init
+# 上下文走到这里时该 fd 在手；PassWall 的长命子进程（sing-box 等）若继承它，
+# uuplugin 的服务锁会被永久扣死（真机实锤过，任何 service uuplugin * 全挂）
+GUARD="${UU_GUARD:-/usr/libexec/uuplugin/guard}"
+
+pw_table_up() { nft list tables 2>/dev/null | grep -qx 'table inet passwall'; }
+
+# 等 PassWall 重启完成的上限（秒）。这里曾经是写死的 sleep 3：x86 上够用，
+# MT7621 那类 mipsel 上不够——PassWall 重启要停 sing-box/chinadns-ng、flush
+# 掉整张 inet passwall 表、重跑 nftables.sh 重建链、再把 chnroute/gfwlist
+# 几万条元素灌回 nft set，光最后一步就常常超过 3 秒。于是慢机器上每次改设备
+# 列表都被判成"重启失败"而走进 guard restore：ACL 白写、PassWall 挨第二次
+# 重启（代理客户端二次瞬断）、uuplugin 被 stop + disable——重启也不会自己
+# 回来。用户视角只是 add 报了个失败，然后设备再也不加速。慢在那类硬件上是
+# 常态而不是意外，定长等待没有一个"够用"的值，故改成有截止时间的轮询。
+PW_WAIT_DEFAULT=20
+PW_WAIT="${UU_PASSWALL_WAIT:-}"
+[ -n "$PW_WAIT" ] || config_get PW_WAIT main passwall_wait "$PW_WAIT_DEFAULT"
+# 上限本身必须是个数，教训同 uuplugin-scan 的 SWEEP_MAX_HOSTS：非数字会让
+# 下面的 [ -lt ] 报错退出 2，而 while/if 把"报错"读成"条件不成立"——上限被
+# 静默架空成"一秒都不等"，恰好是这次要修的 bug 的更狠版本（passwall_wait=abc
+# 反而比 sleep 3 更容易触发误判回滚）。
+# 但不照抄 scan 的"拒绝执行"：sweep 拒绝的代价是"这次没出清单"，接近于零；
+# 走到这里时 ACL 已经 commit 进 /etc/config/passwall、guard 也已布防，
+# "什么都不做"根本没有对应的出口，唯一的另一条分支就是失败＝整套 restore
+# ＝停用 uuplugin。为一个超时值的笔误把加速停掉，代价远大于笔误本身。而且
+# 上限写错在这里只是让人多等几秒，不像 SWEEP_MAX 写错会把内核邻居表顶穿，
+# 没有"宁可什么都不做"的理由。故：回落默认值，并按 warn 级别吵一声留痕。
+# 空值当"没设"，不告警——那是没写，不是写坏了。
+case "$PW_WAIT" in
+'') PW_WAIT="$PW_WAIT_DEFAULT" ;;
+*[!0-9]*)
+	logger -t uuplugin -p daemon.warn "passwall_wait='${PW_WAIT}' 不是非负整数，回落到默认 ${PW_WAIT_DEFAULT} 秒"
+	PW_WAIT="$PW_WAIT_DEFAULT"
+	;;
+esac
+
+# 为什么不能只轮询"表在不在"：restart = stop + start，而"stop 是不是同步
+# 拆表"我们无法确认（本机没有 passwall 源码可查，只能按最坏情况设计）。若
+# stop 把拆表甩给后台，restart 刚返回时看到的可能是还没被拆掉的旧表——
+# "PassWall 其实已经死了"于是被读成"重启成功"：commit、清检查点、死人开关
+# 解除，而代理已经躺下，这一路之后不会再有任何人来收尾。原来那句 sleep 3
+# 是顺手挡住了这一幕（3 秒足够让拆表落地），换成轮询后第一次检查发生在
+# t=0，这层保护就没了。故分两段：
+#   一、先等旧表消失，窗口 3 秒——就是老代码那个窗口，一秒不多。等不到也
+#       继续：stop 可能同步且极快、start 也快，我们压根没赶上那一瞬空窗，
+#       把"没看到空窗"当失败会让每次快速重启都被误判。
+#   二、再等新表回来，第一段用掉的时间算进总上限。
+# 代价：同步拆表的快机器上第一段会白等满 3 秒——那正是今天 sleep 3 的成本，
+# 不是新增的；换来的是慢机器上不再触发整套 restore。
+wait_passwall() {
+	local elapsed=0 gap=3
+	# 第一段的窗口不能超过总上限：passwall_wait 调小时以用户的值为准
+	[ "$PW_WAIT" -lt "$gap" ] && gap="$PW_WAIT"
+	while [ "$elapsed" -lt "$gap" ]; do
+		pw_table_up || break
+		sleep 1
+		elapsed=$((elapsed + 1))
+	done
+	# 每轮"先查、再判预算"，所以预算耗尽前的最后一次检查恰好落在 t=PW_WAIT，
+	# 不存在"表在最后一秒回来却已经判了失败"的缝；反过来第一次检查在 sleep
+	# 之前，表已经回来时一秒都不等（这也是它是轮询而非定长等待的体现）。
+	# 于是 passwall_wait=0 的语义自然就是"只查一次、不等"——合法但激进，
+	# 等于放弃上面第一段的保护，留给测试和"我知道我在干什么"的场合。
+	# PW_WAIT 只喂给 [ -lt ]（十进制解析），绝不进 $(( ))：'08' 这类带前导零
+	# 的值在 $(( )) 里按八进制解析会直接报错，而这里没有任何理由做算术。
+	while :; do
+		pw_table_up && return 0
+		[ "$elapsed" -lt "$PW_WAIT" ] || break
+		sleep 1
+		elapsed=$((elapsed + 1))
+	done
+	logger -t uuplugin -p daemon.err "等待 ${PW_WAIT}s 后 inet passwall 表仍未恢复；慢设备可抬高：uci set uuplugin.main.passwall_wait=60 && uci commit uuplugin"
+	return 1
+}
+
+if pw_table_up; then
+	"$GUARD" protect
+	if /etc/init.d/passwall restart 1000>&- &&
+		wait_passwall &&
+		"$GUARD" health; then
+		"$GUARD" commit
+		logger -t uuplugin "PassWall ACL 已更新（sources: ${SOURCES:-无}）并重启生效"
+	else
+		logger -t uuplugin -p daemon.crit "PassWall 重启后校验失败，回滚"
+		"$GUARD" restore
+		exit 1
+	fi
+else
+	logger -t uuplugin "PassWall ACL 已写入（sources: ${SOURCES:-无}），待 PassWall 启动时生效"
+fi
+
+finish

@@ -1,0 +1,187 @@
+#!/bin/sh
+# 为 UU 动态创建的 tun 设备建立 fw4 zone 与转发。
+#
+# 为什么必须建 zone：UU 自带的 `iptables -I FORWARD -j ACCEPT` 落在
+# iptables-nft 兼容层的 base chain 上，压不住 inet fw4 里 forward 链的
+# REJECT——同一 hook 上的多个 base chain 是并列关系，一边 accept 只代表
+# "本链放行"。device 用 tun* 通配（fw4 渲染为 iifname "tun*"，包到达时
+# 匹配），因此 UU 的 tun 无论叫 tun163 还是 tun164 都自动纳管，无需感知。
+#
+# 刻意不改 defaults 的全局 forward 策略（那是给所有未覆盖转发开绿灯）；
+# 也不在此处 reload 防火墙：镜像首次开机时 fw4 尚未启动，无需 reload；
+# 现网装包场景由安装流程统一 review 后 reload。
+#
+# 幂等：三个 section 名（uu / lan_uu / uu_lan）里只要有一个已被别的类型
+# 占用，就整体跳过并留日志由人工处理——绝不改写用户已有的 section 类型。
+# 已经装好且转发确实指向一个存在的 zone，则直接返回，不覆盖用户的调整。
+#
+# 转发两端的 LAN 侧 zone 名不写死："lan" 只是默认配置的叫法，改名（home/
+# trust）和一个 zone 纳管多个 network 都很常见。连 lan 这个接口逻辑名本身
+# 也不写死（uuplugin.main.lan_iface 可覆盖，默认 lan）。按 fw4 的真实归属
+# 规则找：
+#   * zone 的 network 列表里列了该接口；或
+#   * network.<接口> 用 option zone 反向指到该 zone——fw4 会把 ubus 里 zone
+#     字段等于本 zone 名的接口并进来（parse_zone 里的 related_ubus_networks）
+# 注意 fw4 没有"zone 省略 network 就拿 zone 名当 network 名"这条规则，那是
+# fw3 的语义。按它写会挑中一个 fw4 其实不往里归任何流量的 zone。
+#
+# 找不到就什么都不写、报错退出：fw4 对解析不到的 zone 名只是 warn 一句跳过
+# 这一条 forwarding，ruleset 照常下发、forward_uu 链照常建、fw4 check 照常
+# 通过——于是"加速全程不通"会被每一处自检报成绿色。宁可留着脚本下次开机
+# 重试，也不写一条已知指向空处的规则。
+
+# 名字被别的类型占了就整体跳过（空 = 还没建，属于正常）
+_own() { # $1=section 名 $2=本包要用的类型
+	local t
+	t=$(uci -q get "firewall.$1") || t=""
+	if [ -z "$t" ] || [ "$t" = "$2" ]; then
+		return 0
+	fi
+	logger -t uuplugin -p daemon.err \
+		"firewall 里已有名为 $1 的 ${t} 段（本包要用它做 $2），跳过，请人工处理"
+	return 1
+}
+
+_own uu zone || exit 0
+_own lan_uu forwarding || exit 0
+_own uu_lan forwarding || exit 0
+
+# LAN 侧接口的逻辑名：UU_LAN_IFACE > uuplugin.main.lan_iface > lan。
+# 本脚本全程直连 uci（uci-defaults 环境本也不 config_load），此处保持一致。
+# 校验字符集对齐 libuci 的 uci_validate_name（[A-Za-z0-9_]+）：空/未设是
+# 常态，静默回落默认；非空但含非法字符（如把 br-lan 这种设备名填进来）
+# 回落默认并 warn——否则 find_lan_zone 会拿着一个不存在的接口名安静地
+# 空手而归，报错却怪到防火墙配置头上。
+LAN_IFACE="${UU_LAN_IFACE:-$(uci -q get uuplugin.main.lan_iface)}"
+case "$LAN_IFACE" in
+'') LAN_IFACE=lan ;;
+*[!A-Za-z0-9_]*)
+	logger -t uuplugin -p daemon.warn \
+		"uuplugin.main.lan_iface='${LAN_IFACE}' 含非法字符（须匹配 [A-Za-z0-9_]+），回落到 lan"
+	LAN_IFACE=lan
+	;;
+esac
+
+# uci show 的 section 名可能是 @zone[0] 这种匿名形式（stock OpenWrt 就是
+# 这个样子），里面的 [] 会被 for 的路径展开当成通配符，因此遍历期间关掉 glob
+zone_exists() { # $1=zone 名
+	local s
+	set -f
+	for s in $(uci show firewall 2>/dev/null |
+		sed -n 's/^firewall\.\([^.=]*\)=zone$/\1/p'); do
+		if [ "$(uci -q get "firewall.${s}.name")" = "$1" ]; then
+			set +f
+			return 0
+		fi
+	done
+	set +f
+	return 1
+}
+
+find_lan_zone() {
+	local s name nets n z
+	# 网络自己声明的归属最直接，但要确认它真指向一个存在的 zone——
+	# 指不到就当没说，继续按 network 列表找
+	z=$(uci -q get "network.${LAN_IFACE}.zone") || z=""
+	if [ -n "$z" ] && zone_exists "$z"; then
+		printf '%s' "$z"
+		return 0
+	fi
+	set -f
+	for s in $(uci show firewall 2>/dev/null |
+		sed -n 's/^firewall\.\([^.=]*\)=zone$/\1/p'); do
+		name=$(uci -q get "firewall.${s}.name") || name=""
+		[ -n "$name" ] || continue
+		nets=$(uci -q get "firewall.${s}.network") || nets=""
+		for n in $nets; do
+			if [ "$n" = "$LAN_IFACE" ]; then
+				set +f
+				printf '%s' "$name"
+				return 0
+			fi
+		done
+	done
+	set +f
+	return 1
+}
+
+# 装好的判据不是"我们写过"，而是"转发这会儿确实指向一个存在的 zone"——
+# zone 后来被改名/删掉的情况也能被这条查出来
+installed() {
+	local src dest
+	[ "$(uci -q get firewall.uu)" = "zone" ] || return 1
+	[ "$(uci -q get firewall.lan_uu)" = "forwarding" ] || return 1
+	[ "$(uci -q get firewall.uu_lan)" = "forwarding" ] || return 1
+	src=$(uci -q get firewall.lan_uu.src) || src=""
+	dest=$(uci -q get firewall.uu_lan.dest) || dest=""
+	[ -n "$src" ] && [ "$src" = "$dest" ] || return 1
+	zone_exists "$src"
+}
+
+installed && exit 0
+
+LAN_ZONE=$(find_lan_zone) || LAN_ZONE=""
+# 要么名字规规矩矩，要么就当没找到：这个值来自 /etc/config/firewall，而下面的
+# heredoc 不加引号（要展开它），一个单引号或换行就能把一行 uci batch 拆成
+# 两条命令。fw4 自己也只接受这个字符集，不合规的 zone 它根本不会建。
+case "$LAN_ZONE" in
+*[!A-Za-z0-9_.-]*) LAN_ZONE="" ;;
+esac
+
+if [ -z "$LAN_ZONE" ]; then
+	logger -t uuplugin -p daemon.err \
+		"找不到纳管 ${LAN_IFACE} 网络的 fw4 zone，未建立 uu zone 与转发（不写指向空处的规则）。请确认 LAN zone 的 network 列表含 ${LAN_IFACE}，或 network.${LAN_IFACE} 设了 option zone，然后重启或重装本包"
+	exit 1
+fi
+
+# heredoc 不加引号：LAN_ZONE 要展开。其余值都是字面量，不含 $ 与反引号。
+# 不加 -q：uci 自己的报错要能进开机日志，否则失败连个字都没有
+uci batch <<-EOF
+	set firewall.uu=zone
+	set firewall.uu.name='uu'
+	set firewall.uu.input='ACCEPT'
+	set firewall.uu.output='ACCEPT'
+	set firewall.uu.forward='ACCEPT'
+	set firewall.uu.masq='0'
+	set firewall.uu.mtu_fix='1'
+	add_list firewall.uu.device='tun*'
+	set firewall.lan_uu=forwarding
+	set firewall.lan_uu.src='${LAN_ZONE}'
+	set firewall.lan_uu.dest='uu'
+	set firewall.uu_lan=forwarding
+	set firewall.uu_lan.src='uu'
+	set firewall.uu_lan.dest='${LAN_ZONE}'
+	commit firewall
+EOF
+
+# uci batch 是逐行执行的，中途失败会留下"zone 建好了、转发没建"的半成品。
+# 而 zone 恰恰是第一行建的，也正是 init 的 ensure_firewall 用来判断"装好了"
+# 的东西——不验收的话这个半成品会被当成成功，且全程没有一个字的日志。
+if ! installed; then
+	logger -t uuplugin -p daemon.err \
+		"firewall 配置写入不完整（uu zone 或 lan↔uu 转发缺失），保留 uci-defaults 脚本，下次开机重试"
+	exit 1
+fi
+
+# 三段确实进了持久配置，可让它们生效的 fw4 reload 还没发生（本脚本刻意不
+# reload），出网到底还通不通没有任何人验证过。留个标记记下这个事实：在
+# ensure_firewall 证明它无害之前，guard restore 有权把这三段拆掉。
+# 不能指望回滚时的检查点覆盖它们——检查点是后来 ensure_firewall 才取的，
+# 那会儿这三段早在配置文件里，备份连它们一起备，还原等于什么都没还原。
+# 上面 `installed && exit 0` 那条早退路径刻意不到这里：那是"上次装的早就在
+# 跑"（包升级重跑本脚本），不是新写入。在那儿也标一次，下一次任何原因的
+# 回滚都会白拆一遍用户用了很久的配置。
+STATE_DIR="${UU_GUARD_STATE:-/etc/uuplugin}"
+# 这个目录接着要装 guard 的检查点（含 passwall 的代理凭据），别让它顶着
+# 默认 umask 落成 0755；guard 已经建过的用 chmod 补齐。
+# 用 touch 不用 `: >`：`:` 是特殊内建，POSIX 下重定向失败会让非交互 shell
+# 直接退出——那会以非 0 退出码结束本脚本，uci-defaults 于是留着下次开机
+# 重跑，而重跑时 installed 已成立、走早退路径，标记从此再也不会建。
+(
+	umask 077
+	mkdir -p "$STATE_DIR" && touch "${STATE_DIR}/firewall.unproven"
+) || logger -t uuplugin -p daemon.err \
+	"未验证标记写入失败（${STATE_DIR}/firewall.unproven），回滚将无力拆除 uu zone 与 lan↔uu 转发"
+chmod 0700 "$STATE_DIR" 2>/dev/null
+
+exit 0

@@ -1,0 +1,228 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:118
+msgid "A guard rollback disables the service; after investigating, run: /etc/init.d/uuplugin enable && /etc/init.d/uuplugin start"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:70
+msgid "Accelerated Devices"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:194
+msgid "Acceleration tunnels"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:143
+msgid "All three present (uu zone, lan_uu, uu_lan)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:155
+msgid "Armed: a dangerous change is inside its unconfirmed window (or a previous change never finished)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:35
+msgid "Auto-add Nintendo devices"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:31
+msgid "Auto-detect consoles"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:36
+msgid "Automatically add devices matching a Nintendo OUI. Warning: an auto-added device automatically leaves PassWall, which changes its traffic path. Enable with care."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:165
+msgid "Bypass ACL not rendered"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:165
+msgid "Bypass ACL rendered"
+msgstr ""
+
+#: package/luci-app-uuplugin/root/usr/share/luci/menu.d/luci-app-uuplugin.json:24
+msgid "Configuration"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:40
+msgid "Dead-man switch: after a dangerous change, if it is not confirmed within this many seconds and the network is down, the change is rolled back automatically."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:23
+msgid "Device list and switches for the NetEase UU accelerator / PassWall coexistence layer. Dynamic configuration lives in /etc/config/uuplugin; the firewall zone and the PassWall bypass ACL are rendered from it by the uuplugin service."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:71
+msgid "Devices accelerated by UU; they bypass PassWall at the same time. After Save & Apply a procd reload re-renders the PassWall bypass ACL: PassWall is restarted and proxy clients lose connectivity for a few seconds."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:116
+msgid "Disabled"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:78
+msgid "Edit device"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:28
+msgid "Enable"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:92
+msgid "Enabled"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:113
+msgid "Enabled on boot"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:196
+msgid "Firewall & PassWall"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:198
+msgid "Firewall sections (config layer)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:26
+msgid "Global Settings"
+msgstr ""
+
+#: package/luci-app-uuplugin/root/usr/share/rpcd/acl.d/luci-app-uuplugin.json:3
+msgid "Grant access to LuCI app uuplugin"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:200
+msgid "Guard checkpoint"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:39
+msgid "Guard timeout (seconds)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:55
+msgid "HTTP probe URLs for the egress health check; ICMP and HTTP probes count as healthy if either passes. Leave empty for the built-in defaults."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:54
+msgid "Health check URLs (HTTP)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:49
+msgid "Health check targets (ICMP)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:50
+msgid "ICMP probe targets for the egress health check; ICMP and HTTP probes count as healthy if either passes. Leave empty for the built-in defaults."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:58
+msgid "LAN interface"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:186
+msgid "Log unavailable (no permission or logd not running)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:83
+msgid "MAC address"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:142
+msgid "Missing: %s"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:81
+msgid "Name"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:183
+msgid "No uuplugin log entries"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:131
+msgid "None (not accelerating)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:156
+msgid "Not armed"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:150
+msgid "Not present"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:106
+msgid "Not running"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:201
+msgid "PassWall integration"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:44
+msgid "PassWall restart wait limit (seconds)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:149
+msgid "Present: committed to persistent configuration but never passed an egress health check; a guard rollback is authorized to remove the three sections"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:220
+msgid "Read-only status panel; refreshes every 5 seconds and performs no action on the router."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:203
+msgid "Recent Log"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:106
+msgid "Running (PID %s)"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:192
+msgid "Running state"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:190
+msgid "Service"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:193
+msgid "Start on boot"
+msgstr ""
+
+#: package/luci-app-uuplugin/root/usr/share/luci/menu.d/luci-app-uuplugin.json:15
+msgid "Status"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:22
+#: package/luci-app-uuplugin/root/usr/share/luci/menu.d/luci-app-uuplugin.json:3
+msgid "UU Accelerator"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:218
+msgid "UU Accelerator Status"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/overview.js:199
+msgid "Unproven firewall marker"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:45
+msgid "Upper bound in seconds to wait for the inet passwall table to come back after PassWall is restarted; it is a deadline, not a fixed delay. If a slow device (e.g. MT7621) gets misjudged as a failed restart, raise it to 60."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:63
+msgid "WAN interface"
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:32
+msgid "When a suspected game console appears on the LAN, write a hint to the system log."
+msgstr ""
+
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:59
+#: package/luci-app-uuplugin/htdocs/luci-static/resources/view/uuplugin/config.js:64
+msgid "netifd logical interface name (not the device name); only needed on systems where the default interface naming was changed."
+msgstr ""

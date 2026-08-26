@@ -1,0 +1,290 @@
+#!/bin/sh
+# guard —— uuplugin 的死人开关与出网自检（内部组件）
+#
+# 原则：回滚必须被验证有效，而不是被假设有效。
+#
+#   guard protect        备份将被改动的配置（并记录变更前网络状态）
+#                        + 派生脱离会话的延时校验进程
+#   <危险动作>           fw4 reload / passwall restart
+#   校验 + guard commit  活着走到这里且网络正常 → 清除检查点
+#   失败 → guard restore 验证式回滚，见下
+#
+# restore 的保证链（每级都验证，失败才升级）：
+#   1. 先落盘：还原配置文件。此后任何时刻掉电/重启，持久状态都是已知
+#      良好的检查点——这是整个机制的兜底之底
+#   1.5 拆掉"进了持久配置却从没被证明无害"的 uu zone 与 lan↔uu 转发
+#      （firewall.unproven 标记在才做）。检查点覆盖不到它们，见下文
+#   2. 重载运行时：fw4 reload；失败 → /etc/init.d/firewall restart
+#   3. 停用 uuplugin（回滚场景保持安全比保持功能重要）
+#   4. 验证：出网自检重试 3 次；通过才算回滚成功
+#   5. 仍失败且"变更前网络本来正常" → 最后手段：延时重启路由器
+#      （配置已是检查点状态，重启即按已知良好配置重建一切）。
+#      变更前就断网的（问题不在我们）不触发重启，防误伤；没有检查点可查的
+#      （watch 路径）同样不触发——没有证据就不重启
+#
+# 两种死法都覆盖：动作后断网（调用方发现 → restore）；进程死在半路
+# （protect 派生的延时校验替死者收尾：网络正常清理退出，异常则 restore）。
+#
+# guard watch：给异步拉起二进制用——延时自检，失败先停 uuplugin
+# （其规则随进程退出消失），仍断网则升级为配置级 restore。
+#
+# 可调项（uuplugin.main）：guard_timeout(120s) / guard_reboot(1) /
+# health_target / health_url（ICMP+HTTP 双探针，防 ICMP 限流误判）
+
+set -u
+
+SELF="${UU_GUARD_SELF:-/usr/libexec/uuplugin/guard}"
+# 检查点必须落在重启后还在的地方：/var 在 OpenWrt 上是指向 /tmp 的软链，
+# 放那儿等于把"兜底之底"放进内存盘，掉电后配置和检查点一起没。/etc 与
+# /root 都在 overlay 上、都持久，选 /etc 的理由是 sysupgrade -c 的保留清单
+# 就是 SAVE_OVERLAY_PATH=/etc：放 /root 的检查点会在升级固件时一起消失，
+# 而"刚升完级"恰恰是最需要它的时刻。别为了"整洁"把它挪回家目录。
+STATE_DIR="${UU_GUARD_STATE:-/etc/uuplugin}"
+CKPT="$STATE_DIR/checkpoint"
+# 检查点管不到的那部分：uci-defaults 在装包时就把 uu zone 与两条 lan↔uu
+# 转发 commit 进 /etc/config/firewall 了，而让它们生效的 fw4 reload 要等到
+# 后来 init 的 ensure_firewall 才发生——于是那时候 protect 取的检查点里
+# 已经躺着这三段。拿它还原等于什么都没还原：cmp 判定文件相同、did_fw=0、
+# 连 fw4 reload 都不做，内核里那份有害 ruleset 原样留着，最后重启回来还是它。
+# 镜像首次开机更彻底：fw4 启动时就渲染好了，ensure_firewall 一路短路返回，
+# 全程没有任何检查点。所以回滚不能只会"还原文件"，还得有能力把这三段拆掉。
+# 标记的含义就是"这三段在持久配置里但没人验证过"：uci-defaults 写成功后建，
+# ensure_firewall 一旦证明出网仍通就删（撤掉安全网），期间 restore 有权拆。
+# 三个文件必须用同一个默认值，否则谁也看不见谁的标记。
+UNPROVEN="$STATE_DIR/firewall.unproven"
+LOCK="${UU_GUARD_LOCK:-/tmp/uuplugin-restore.lock}"
+CONF_FW="${UU_CONF_FIREWALL:-/etc/config/firewall}"
+CONF_PW="${UU_CONF_PASSWALL:-/etc/config/passwall}"
+INIT_UU="${UU_INIT_UUPLUGIN:-/etc/init.d/uuplugin}"
+INIT_PW="${UU_INIT_PASSWALL:-/etc/init.d/passwall}"
+INIT_FW="${UU_INIT_FIREWALL:-/etc/init.d/firewall}"
+FW4="${UU_FW4:-fw4}"
+REBOOT_CMD="${UU_REBOOT:-reboot}"
+# 测试环境没有 setsid（macOS）；生产默认用 setsid 脱离会话
+SETSID="${UU_SETSID-setsid}"
+RETRY_SLEEP="${UU_GUARD_RETRY_SLEEP:-5}"
+REBOOT_DELAY="${UU_GUARD_REBOOT_DELAY:-60}"
+
+_cfg() { # $1=键 $2=默认值
+	local v
+	v=$(uci -q get "uuplugin.main.$1" 2>/dev/null) || v=""
+	printf '%s' "${v:-$2}"
+}
+
+log() { logger -s -t uuplugin-guard -p "daemon.$1" "$2"; }
+
+# ---------------------------------------------------------------------------
+
+health() {
+	local t
+	for t in $(_cfg health_target "223.5.5.5 119.29.29.29"); do
+		ping -c 1 -W 2 "$t" >/dev/null 2>&1 && return 0
+	done
+	for t in $(_cfg health_url "http://connect.rom.miui.com/generate_204"); do
+		uclient-fetch -q -O /dev/null --timeout=8 "$t" >/dev/null 2>&1 && return 0
+	done
+	return 1
+}
+
+protect() {
+	local grace
+	grace=$(_cfg guard_timeout 120)
+	# 检查点里躺着 firewall 与 passwall 配置（后者含代理凭据），
+	# 别让它顶着默认 umask 落成 0755
+	(
+		umask 077
+		mkdir -p "$CKPT"
+	)
+	chmod 0700 "$STATE_DIR" "$CKPT" 2>/dev/null
+	# 修剪历史：已消费的检查点只留最近 3 份，防无限堆积
+	ls -dt "$STATE_DIR"/checkpoint.restored.* 2>/dev/null | tail -n +4 |
+		while read -r d; do rm -rf "$d"; done
+	cp "$CONF_FW" "$CKPT/firewall"
+	[ -f "$CONF_PW" ] && cp "$CONF_PW" "$CKPT/passwall"
+	if nft list tables 2>/dev/null | grep -qx 'table inet passwall'; then
+		: >"$CKPT/passwall.was-running"
+	fi
+	# 记录变更前网络状态：restore 只在"变更前是好的"时才动用重启兜底
+	if health; then
+		echo ok >"$CKPT/health.pre"
+	else
+		echo bad >"$CKPT/health.pre"
+		log warn "变更前网络即异常，回滚验证失败时将不触发重启兜底"
+	fi
+	: >"$CKPT/.active"
+
+	# 延时校验：替"死在半路的调用方"收尾
+	$SETSID /bin/sh -c "
+		sleep $grace
+		[ -f '$CKPT/.active' ] || exit 0
+		if /bin/sh '$SELF' health; then
+			logger -t uuplugin-guard -p daemon.warn '调用方未确认但网络正常，清除检查点'
+			rm -rf '$CKPT'
+			exit 0
+		fi
+		logger -t uuplugin-guard -p daemon.crit '超时未确认且网络异常，执行自动回滚'
+		exec /bin/sh '$SELF' restore '$CKPT'
+	" </dev/null >/dev/null 2>&1 1000>&- &
+	log info "已布防（${grace}s 内未确认成功且断网将自动回滚）"
+}
+
+commit() {
+	rm -rf "$CKPT"
+}
+
+restore() {
+	# $1（可选）＝检查点目录。protect/watch 派生的看门狗会显式把自己那一份
+	# 传进来：否则包一旦在 grace 窗口内被升级、STATE_DIR 跟着变，看门狗
+	# exec 到新脚本后会按新路径找 .active，找不到就把配置回滚整段跳过去——
+	# 死人开关失效开门，比没有它更糟。
+	[ -n "${1:-}" ] && CKPT="$1"
+
+	# 原子锁：并发触发只执行一次
+	mkdir "$LOCK" 2>/dev/null || {
+		log warn "restore 已在进行，跳过"
+		exit 0
+	}
+	trap 'rmdir "$LOCK" 2>/dev/null' EXIT
+
+	# pre 默认 bad，也就是"不重启"。没有检查点就意味着这次不是配置变更后的
+	# 回滚（watch 路径正是如此），我们手上并没有"变更前网络是好的"这个证据。
+	# 默认 ok 会让一次上游断线走成：health 失败 → 停服务 → 仍失败 → restore
+	# → 无检查点 → pre=ok → 重启路由器。为了运营商抖一下就把管理通道自己
+	# 掐了，正是本文件承诺过不做的误伤。
+	# .active 在而 health.pre 读不到的窄路走同一条：protect 先写 health.pre
+	# （3 字节）再建 .active（0 字节），overlay 写满时前者可能失败而后者照样
+	# 建出来——16MB 的 overlay 写满并不稀奇。证据缺失就按无证据处理，宁可
+	# 不重启，所以下面那句 cat 失败的回落值同样是 bad。
+	local pre=bad did_fw=0 pw_restart=0 n=0
+
+	if [ -f "$CKPT/.active" ]; then
+		pre=$(cat "$CKPT/health.pre" 2>/dev/null) || pre=bad
+
+		# 第 1 级：先落盘。此后无论发生什么，持久配置都是已知良好状态
+		if [ -f "$CKPT/firewall" ] && ! cmp -s "$CKPT/firewall" "$CONF_FW"; then
+			cp "$CKPT/firewall" "$CONF_FW"
+			log crit "已还原 firewall 配置"
+			did_fw=1
+		fi
+		if [ -f "$CKPT/passwall" ] && [ -f "$CONF_PW" ] &&
+			! cmp -s "$CKPT/passwall" "$CONF_PW"; then
+			cp "$CKPT/passwall" "$CONF_PW"
+			log crit "已还原 passwall 配置"
+			[ -f "$CKPT/passwall.was-running" ] && pw_restart=1
+		fi
+	fi
+
+	# 第 1.5 级：拆掉未经验证的 uu zone 与 lan↔uu 转发（见文件头 UNPROVEN）。
+	#
+	# 刻意不放进上面那个 .active 块里：watch 路径与镜像首次开机路径根本没有
+	# 检查点，可祸首照样可能是这三段——没有检查点不等于没有嫌疑人，那种情况下
+	# 这一级是唯一还能动持久配置的手。
+	#
+	# 也刻意排在第 1 级之后：先把检查点内容盖回文件、再从盖回来的内容里删段，
+	# 于是"检查点被污染（备份里就带着这三段）"与"检查点干净"两种情形收敛到同一
+	# 结果。反过来先删后盖，删掉的会被检查点原样盖回来，等于没删。
+	if [ -f "$UNPROVEN" ]; then
+		# 先删 zone 再删转发。次序只在一种情形下有意义：进程死在这三句之间
+		# （回滚本就跑在网络已经坏掉的时候，第 5 级还可能重启路由器），/tmp/.uci
+		# 里于是留下半截 delta 等着别人 commit。那时剩下两条指向不存在 zone 的
+		# 转发是惰性的（fw4 只 warn 一句跳过），而剩下一个 input/forward 全
+		# ACCEPT、按 tun* 通配纳管设备的 zone 才是真危险的那半边。
+		# 只要活到下面那句 commit，两种次序落盘逐字节相同——commit 是拿合并后
+		# 的整体状态重渲染整个文件，不是按 delete 的先后往文件里打洞。
+		uci -q delete firewall.uu
+		uci -q delete firewall.lan_uu
+		uci -q delete firewall.uu_lan
+		# commit 失败就把标记留着：那三段还在 /etc/config/firewall 里，而
+		# watch 路径的回滚未必走到第 5 级重启，没有标记下一次就再没有权限
+		# 碰它们了。重试的代价只是一次多余的 fw4 reload——uci -q delete 对
+		# 已经不在的段是空操作。这里也绝不能照打"已拆除"那句：本仓库反复
+		# 吃过"报绿其实没干成"的亏，回滚日志更不该是第一个撒谎的人。
+		if uci commit firewall; then
+			rm -f "$UNPROVEN"
+			log crit "已拆除未经验证的 uu zone 与 lan↔uu 转发（装包时写入，从未通过出网自检）"
+		else
+			log crit "拆除未验证段后 uci commit 失败，保留未验证标记待下次回滚重试"
+		fi
+		# 无条件置 1，不去比对"到底删掉了没有"：标记在就说明内核里那份 ruleset
+		# 是照着这三段渲染出来的。首次开机路径上第 1 级压根没跑，没有别人会替
+		# 我们触发这次 reload——漏了它，配置干净了而内核照旧，白拆一场。
+		did_fw=1
+	fi
+
+	# 第 2 级：重载运行时，失败升级
+	if [ "$did_fw" -eq 1 ]; then
+		if ! "$FW4" reload; then
+			log crit "fw4 reload 失败，升级为 firewall restart"
+			"$INIT_FW" restart 1000>&- || log crit "firewall restart 也失败"
+		fi
+	fi
+	if [ "$pw_restart" -eq 1 ]; then
+		"$INIT_PW" restart 1000>&- || log crit "passwall restart 失败"
+	fi
+
+	if [ -f "$CKPT/.active" ]; then
+		mv "$CKPT" "${CKPT}.restored.$(date +%s)" 2>/dev/null || rm -rf "$CKPT"
+	fi
+
+	# 第 3 级：停用 uuplugin——回滚场景保持安全比保持功能重要
+	"$INIT_UU" stop 2>/dev/null
+	"$INIT_UU" disable 2>/dev/null
+
+	# 第 4 级：验证回滚事实上有效
+	while [ "$n" -lt 3 ]; do
+		if health; then
+			log crit "回滚完成且出网自检通过。排查后重新启用：$INIT_UU enable && $INIT_UU start"
+			exit 0
+		fi
+		n=$((n + 1))
+		sleep "$RETRY_SLEEP"
+	done
+
+	# 第 5 级：最后手段。仅当变更前网络正常（问题确系本次变更引入）才重启
+	log crit "回滚后出网自检仍失败"
+	if [ "$pre" = "ok" ] && [ "$(_cfg guard_reboot 1)" = "1" ]; then
+		log crit "${REBOOT_DELAY}s 后重启路由器（配置已是检查点状态，重启即按已知良好配置重建）。取消：uci set uuplugin.main.guard_reboot=0"
+		sleep "$REBOOT_DELAY"
+		"$REBOOT_CMD"
+	fi
+	exit 1
+}
+
+# 异步动作（拉起二进制）的事后自检：先停服务（其规则随进程退出消失），
+# 仍断网则说明问题不止于二进制，升级为配置级 restore
+watch() {
+	local grace
+	grace=$(_cfg guard_timeout 120)
+	$SETSID /bin/sh -c "
+		sleep $grace
+		/bin/sh '$SELF' health && exit 0
+		logger -t uuplugin-guard -p daemon.crit '服务启动 ${grace}s 后出网自检失败，停用 uuplugin'
+		'$INIT_UU' stop
+		'$INIT_UU' disable
+		sleep 3
+		if /bin/sh '$SELF' health; then
+			logger -t uuplugin-guard -p daemon.crit '停用 uuplugin 后网络恢复，问题源于二进制，已保持停用'
+			exit 0
+		fi
+		logger -t uuplugin-guard -p daemon.crit '停用后仍断网，升级为配置级回滚'
+		exec /bin/sh '$SELF' restore '$CKPT'
+	" </dev/null >/dev/null 2>&1 1000>&- &
+}
+
+# ---------------------------------------------------------------------------
+
+case "${1:-}" in
+health) health ;;
+protect) protect ;;
+commit) commit ;;
+restore)
+	shift
+	restore "$@"
+	;;
+watch) watch ;;
+*)
+	# 从第 2 行打到第一行非注释为止，不写死行号
+	awk 'NR==1{next} !/^#/{exit} {sub(/^# ?/, ""); print}' "$0"
+	exit 1
+	;;
+esac
