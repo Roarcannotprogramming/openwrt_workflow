@@ -25,8 +25,8 @@ Jobs run in parallel where possible; `build_image` depends on all package builds
 - `openwrt/imagebuilder:{arch}-{version}` - For creating firmware images
 
 ### Supported Targets
-- **Architectures**: `x86-64`, `rockchip-armv8`
-- **Profiles**: `generic` (x86-64), `friendlyarm_nanopi-r2s` (rockchip-armv8)
+- **Architectures**: `x86-64`, `rockchip-armv8`, `mediatek-filogic` (25.12+ only — the nradio profile was merged upstream after the 24.10 branch, so the setup job excludes filogic from the 24.10 matrix line)
+- **Profiles**: `generic` (x86-64), `friendlyarm_nanopi-r2s` (rockchip-armv8), `nradio_c8-668gl` (mediatek-filogic; official upstream device support — no custom DTS/patches needed)
 
 ## Build Scripts
 

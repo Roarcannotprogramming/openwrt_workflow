@@ -16,6 +16,7 @@ jobs:
       - id: set-matrix
         run: |
           versions=()
+          excludes=()
           for prefix in 24.10 25.12; do
             sdk=$(curl -sf "https://hub.docker.com/v2/repositories/openwrt/sdk/tags/?page_size=100&name=x86-64-${prefix}" \
               | jq -r '.results[].name' | grep -oP '(?<=x86-64-)\d+\.\d+\.\d+(-rc\d+)?$')
@@ -25,10 +26,16 @@ jobs:
               | sed 's/-rc/~rc/' | sort -V | tail -1 | sed 's/~rc/-rc/')
             if [[ -n "$ver" ]]; then
               versions+=("\"$ver\"")
+              # mediatek-filogic（NRadio C8-668GL）只上 25.12+：官方对该设备的
+              # 支持晚于 24.10 分支，24.10 的 imagebuilder 里没有这个 profile
+              if [[ "$prefix" == "24.10" ]]; then
+                excludes+=("{\"version\":\"$ver\",\"arch\":\"mediatek-filogic\"}")
+              fi
             fi
           done
           ver_json=$(IFS=,; echo "${versions[*]}")
-          echo "matrix={\"version\":[${ver_json}],\"arch\":[\"x86-64\",\"rockchip-armv8\"]}" >> $GITHUB_OUTPUT
+          excl_json=$(IFS=,; echo "${excludes[*]}")
+          echo "matrix={\"version\":[${ver_json}],\"arch\":[\"x86-64\",\"rockchip-armv8\",\"mediatek-filogic\"],\"exclude\":[${excl_json}]}" >> $GITHUB_OUTPUT
   build_passwall:
     needs: [setup]
     strategy:
@@ -385,6 +392,33 @@ jobs:
           echo "profile=generic" >> $GITHUB_ENV
         elif [[ "${{ matrix.arch }}" == "rockchip-armv8" ]]; then
           echo "profile=friendlyarm_nanopi-r2s" >> $GITHUB_ENV
+        elif [[ "${{ matrix.arch }}" == "mediatek-filogic" ]]; then
+          # NRadio C8-668GL：官方 profile，无自定义 DTS/补丁
+          echo "profile=nradio_c8-668gl" >> $GITHUB_ENV
+        fi
+    - name: Set packages
+      run: |
+        # 三个 arch 共用的主列表（与改动前的全局列表逐字对应，抽走的四个
+        # arch 相关包在下面分支里补回，集合等价）
+        COMMON="luci luci-app-qos luci-app-upnp luci-proto-ipv6"
+        COMMON="$COMMON luci-i18n-base-zh-cn netdata luci-app-ttyd pciutils"
+        COMMON="$COMMON coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq"
+        COMMON="$COMMON vim python3 sudo ipset samba4-server wget-ssl"
+        COMMON="$COMMON openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4"
+        COMMON="$COMMON tcpdump zstd tmux bash netcat ip6tables-mod-nat iptables-mod-tproxy dnsmasq-full"
+        COMMON="$COMMON xl2tpd kmod-loop nfs-kernel-server iptables-mod-socket"
+        COMMON="$COMMON iptables-mod-iprange kmod-nft-socket kmod-nft-tproxy kmod-nft-nat"
+        COMMON="$COMMON wireguard-tools kmod-wireguard luci-proto-wireguard wakeonlan luci-app-wol"
+        if [[ "${{ matrix.arch }}" == "mediatek-filogic" ]]; then
+          # C8-668GL 是 5G CPE：qmi/cdc/usb-serial 内核驱动已在官方
+          # DEVICE_PACKAGES 里，这里补蜂窝 WAN 的用户态 proto 与短信工具。
+          # 不装 hostapd/wpa-supplicant：带 wifi 的 target 默认自带
+          # wpad-basic，重复装会文件冲突
+          echo "packages=$COMMON luci-proto-qmi luci-proto-mbim sms-tool" >> $GITHUB_ENV
+        else
+          # x86/rockchip 的硬件包：kmod-igc（Intel 2.5G 网卡）、
+          # kmod-mt7921e（PCIe 无线卡）；二者无默认 wpad，无线要显式装
+          echo "packages=$COMMON kmod-igc kmod-mt7921e hostapd wpa-supplicant" >> $GITHUB_ENV
         fi
     - name: Make Image
       run: |
@@ -408,16 +442,6 @@ jobs:
       env:
         rootfs_size: 4096
         kernel_size: 256
-        packages: >-
-          luci luci-app-qos luci-app-upnp luci-proto-ipv6 kmod-igc kmod-mt7921e
-          luci-i18n-base-zh-cn netdata luci-app-ttyd pciutils
-          coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq
-          vim python3 sudo ipset samba4-server wget-ssl
-          openvpn-openssl luci-app-openvpn lsof kmod-usb-storage block-mount lsblk luci-app-samba4
-          tcpdump zstd tmux bash netcat ip6tables-mod-nat iptables-mod-tproxy dnsmasq-full hostapd
-          wpa-supplicant xl2tpd kmod-loop nfs-kernel-server iptables-mod-socket
-          iptables-mod-iprange kmod-nft-socket kmod-nft-tproxy kmod-nft-nat
-          wireguard-tools kmod-wireguard luci-proto-wireguard wakeonlan luci-app-wol
     - uses: actions/upload-artifact@v7
       with:
         name: openwrt-${{ matrix.arch }}-${{ matrix.version }}
