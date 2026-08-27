@@ -77,6 +77,13 @@ jobs:
         sudo -u $BUILDER echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
         chown -R $BUILDER:$BUILDER $BUILD_DIR
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
+        # sing-box 1.13.19 的 go.mod 要求 Go >= 1.24.7，而 24.10 分支 packages
+        # feed 的 golang 只有 1.23.12，且打包里 GOTOOLCHAIN=local 不许自动升级
+        # （两条 24.10 格的实际报错原文：requires go >= 1.24.7, running go
+        # 1.23.12）。按 passwall 官方文档的通行做法换成 sbwml 维护的新版打包，
+        # 25.x 分支 = Go 1.25.14；三条版本线统一同一 Go，行为一致
+        sudo -u $BUILDER rm -rf feeds/packages/lang/golang
+        sudo -u $BUILDER git clone --depth 1 https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
         sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
         # sing-box 是 luci-app-passwall 的运行时依赖，make package/X/compile
         # 不会连带编译运行时依赖——不显式编它，产物里就永远没有代理核心
