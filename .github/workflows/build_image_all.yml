@@ -80,8 +80,11 @@ jobs:
         sudo -u $BUILDER ./scripts/feeds install luci-app-passwall
         # sing-box 是 luci-app-passwall 的运行时依赖，make package/X/compile
         # 不会连带编译运行时依赖——不显式编它，产物里就永远没有代理核心
-        # （镜像 manifest 实证过：三个 arch 的镜像里 passwall 都是空壳）
-        sudo -u $BUILDER ./scripts/feeds install sing-box
+        # （镜像 manifest 实证过：三个 arch 的镜像里 passwall 都是空壳）。
+        # -p 钉住来源 feed：官方 packages feed 里也有同名 sing-box，裸 install
+        # 会被它抢走（symlink 落到 feeds/packages/ 下，下面的 make 路径就断了），
+        # 而我们要的本就是与 luci-app-passwall 成套的 passwall_packages 版本
+        sudo -u $BUILDER ./scripts/feeds install -p passwall_packages sing-box
         sudo -u $BUILDER make defconfig
         sudo -u $BUILDER make package/feeds/luci/luci-base/host/compile
         ### enable SingBox
