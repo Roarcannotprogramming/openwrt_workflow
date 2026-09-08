@@ -14,7 +14,8 @@ cd $BUILD_DIR
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
-    sudo tree make rsync file zstd wget curl ca-certificates python3 perl
+    sudo tree make rsync file zstd wget curl ca-certificates python3 perl \
+    patch gawk unzip bzip2 xz-utils
 useradd -M -d /builder -s /bin/bash $BUILDER
 chown -R $BUILDER:$BUILDER $BUILD_DIR
 
