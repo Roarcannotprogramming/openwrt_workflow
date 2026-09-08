@@ -62,7 +62,7 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           sudo git wget curl ca-certificates xz-utils zstd tree \
-          build-essential gawk gettext file libncurses-dev zlib1g-dev \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
           python3 python3-setuptools rsync unzip
         useradd -M -d /builder -s /bin/bash buildbot
         case "${{ matrix.arch }}" in
@@ -174,7 +174,7 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           sudo git wget curl ca-certificates xz-utils zstd tree \
-          build-essential gawk gettext file libncurses-dev zlib1g-dev \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
           python3 python3-setuptools rsync unzip
         useradd -M -d /builder -s /bin/bash buildbot
         case "${{ matrix.arch }}" in
@@ -239,7 +239,7 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           sudo git wget curl ca-certificates xz-utils zstd tree \
-          build-essential gawk gettext file libncurses-dev zlib1g-dev \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
           python3 python3-setuptools rsync unzip
         useradd -M -d /builder -s /bin/bash buildbot
         case "${{ matrix.arch }}" in
@@ -319,7 +319,7 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           sudo git wget curl ca-certificates xz-utils zstd tree \
-          build-essential gawk gettext file libncurses-dev zlib1g-dev \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
           python3 python3-setuptools rsync unzip
         useradd -M -d /builder -s /bin/bash buildbot
         case "${{ matrix.arch }}" in
@@ -401,7 +401,7 @@ jobs:
         apt-get update
         apt-get install -y --no-install-recommends \
           sudo git wget curl ca-certificates xz-utils zstd tree \
-          build-essential gawk gettext file libncurses-dev zlib1g-dev \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
           python3 python3-setuptools rsync unzip
         useradd -M -d /builder -s /bin/bash buildbot
         case "${{ matrix.arch }}" in
