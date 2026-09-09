@@ -17,13 +17,14 @@ jobs:
         run: |
           versions=()
           excludes=()
+          # 版本发现从 downloads.openwrt.org 的 releases 索引拿。不再查
+          # Docker Hub 的 openwrt/sdk、openwrt/imagebuilder 标签——那两个镜像
+          # 是 bullseye 底（buildbot buildworker），bullseye 2026-08-31 LTS
+          # 到期后 apt 源失效，本仓库已整体迁离这两个镜像
+          index=$(curl -sf "https://downloads.openwrt.org/releases/")
           for prefix in 24.10 25.12; do
-            sdk=$(curl -sf "https://hub.docker.com/v2/repositories/openwrt/sdk/tags/?page_size=100&name=x86-64-${prefix}" \
-              | jq -r '.results[].name' | grep -oP '(?<=x86-64-)\d+\.\d+\.\d+(-rc\d+)?$')
-            ib=$(curl -sf "https://hub.docker.com/v2/repositories/openwrt/imagebuilder/tags/?page_size=100&name=x86-64-${prefix}" \
-              | jq -r '.results[].name' | grep -oP '(?<=x86-64-)\d+\.\d+\.\d+(-rc\d+)?$')
-            ver=$(comm -12 <(echo "$sdk" | sort) <(echo "$ib" | sort) \
-              | sed 's/-rc/~rc/' | sort -V | tail -1 | sed 's/~rc/-rc/')
+            # 只匹配正式发布（href="25.12.5/"）；-rc 目录名带后缀，(?=/) 兜不住
+            ver=$(echo "$index" | grep -oP "(?<=href=\")${prefix}\.\d+(?=/)" | sort -V | tail -1)
             if [[ -n "$ver" ]]; then
               versions+=("\"$ver\"")
               # mediatek-filogic（NRadio C8-668GL）只上 25.12+：官方对该设备的
@@ -43,13 +44,42 @@ jobs:
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     name: Build Passwall for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
-    container: 
-      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+    # debian:13（trixie）裸容器 + 官方 SDK tarball：官方 openwrt/sdk 镜像是
+    # bullseye 底，bullseye 2026-08-31 LTS 到期后 security 源下架，apt 必挂。
+    # /builder 目录与 buildbot 用户在 Prepare 步里复刻官方镜像的布局
+    container:
+      image: debian:13
       options: --user root
     defaults:
       run:
         shell: bash
     steps:
+
+    - name: Prepare Debian 13 + OpenWrt SDK
+      run: |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          sudo git wget curl ca-certificates xz-utils zstd tree \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
+          python3 python3-setuptools rsync unzip
+        useradd -M -d /builder -s /bin/bash buildbot
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "SDK tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p /builder
+        tar -xf "$file" -C /builder --strip-components=1
+        rm -f "$file" sha256sums
+        chown -R buildbot:buildbot /builder
 
     - name: Install golang
       run: |
@@ -71,8 +101,6 @@ jobs:
         export GOROOT=/usr/local/go
         export PATH=$PATH:/usr/local/go/bin
         cd $BUILD_DIR
-        apt-get update
-        apt install sudo tree -y
         sudo -u $BUILDER echo "src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;main" >> "feeds.conf.default"
         sudo -u $BUILDER echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main" >> "feeds.conf.default"
         chown -R $BUILDER:$BUILDER $BUILD_DIR
@@ -133,12 +161,37 @@ jobs:
     name: Build Argon for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: debian:13
       options: --user root
     defaults:
       run:
         shell: bash
     steps:
+    - name: Prepare Debian 13 + OpenWrt SDK
+      run: |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          sudo git wget curl ca-certificates xz-utils zstd tree \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
+          python3 python3-setuptools rsync unzip
+        useradd -M -d /builder -s /bin/bash buildbot
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "SDK tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p /builder
+        tar -xf "$file" -C /builder --strip-components=1
+        rm -f "$file" sha256sums
+        chown -R buildbot:buildbot /builder
     - uses: actions/checkout@v5
     - name: Set package extension
       run: |
@@ -153,8 +206,6 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         cd $BUILD_DIR
-        apt-get update
-        apt install sudo -y
         sudo -u $BUILDER git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
         sudo -u $BUILDER make defconfig
@@ -175,12 +226,37 @@ jobs:
     name: Build Bandix for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: debian:13
       options: --user root
     defaults:
       run:
         shell: bash
     steps:
+    - name: Prepare Debian 13 + OpenWrt SDK
+      run: |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          sudo git wget curl ca-certificates xz-utils zstd tree \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
+          python3 python3-setuptools rsync unzip
+        useradd -M -d /builder -s /bin/bash buildbot
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "SDK tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p /builder
+        tar -xf "$file" -C /builder --strip-components=1
+        rm -f "$file" sha256sums
+        chown -R buildbot:buildbot /builder
     - uses: actions/checkout@v5
     - name: Set package extension
       run: |
@@ -195,8 +271,6 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         cd $BUILD_DIR
-        apt-get update
-        apt install sudo -y
         # Clone both repositories
         sudo -u $BUILDER git clone https://github.com/timsaya/openwrt-bandix.git package/openwrt-bandix
         sudo -u $BUILDER git clone https://github.com/timsaya/luci-app-bandix.git package/luci-app-bandix
@@ -232,12 +306,37 @@ jobs:
     name: Build Luci App Netdata for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: debian:13
       options: --user root
     defaults:
       run:
         shell: bash
     steps:
+    - name: Prepare Debian 13 + OpenWrt SDK
+      run: |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          sudo git wget curl ca-certificates xz-utils zstd tree \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
+          python3 python3-setuptools rsync unzip
+        useradd -M -d /builder -s /bin/bash buildbot
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "SDK tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p /builder
+        tar -xf "$file" -C /builder --strip-components=1
+        rm -f "$file" sha256sums
+        chown -R buildbot:buildbot /builder
     - uses: actions/checkout@v5
     - name: Set package extension
       run: |
@@ -252,8 +351,6 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         cd $BUILD_DIR
-        apt-get update
-        apt install sudo -y
         sudo -u $BUILDER git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
         while ! sudo -u $BUILDER ./scripts/feeds update -a; do echo "Try again"; done
         sudo -u $BUILDER ./scripts/feeds install -a
@@ -291,12 +388,37 @@ jobs:
     name: Build UUplugin for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.version }}
+      image: debian:13
       options: --user root
     defaults:
       run:
         shell: bash
     steps:
+    - name: Prepare Debian 13 + OpenWrt SDK
+      run: |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          sudo git wget curl ca-certificates xz-utils zstd tree \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
+          python3 python3-setuptools rsync unzip
+        useradd -M -d /builder -s /bin/bash buildbot
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "SDK tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p /builder
+        tar -xf "$file" -C /builder --strip-components=1
+        rm -f "$file" sha256sums
+        chown -R buildbot:buildbot /builder
     - uses: actions/checkout@v5
     - name: Set package extension
       run: |
@@ -311,8 +433,6 @@ jobs:
         export BUILD_DIR="/builder"
         export BUILDER="buildbot"
         cd $BUILD_DIR
-        apt-get update
-        apt install sudo tree -y
         # uuplugin DEPENDS +luci-app-passwall：编包只需要 feed 元数据能把依赖
         # 解析出来；真正的 passwall 包由 build_passwall 任务产出并一起进镜像
         sudo -u $BUILDER echo "src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;main" >> "feeds.conf.default"
@@ -393,10 +513,31 @@ jobs:
       run: |
         sudo systemctl stop docker.socket
         sudo systemctl stop docker
-        sudo mkdir -p ${{ github.workspace }}/docker 
-        sudo mv /var/lib/docker ${{ github.workspace }}/docker 
+        sudo mkdir -p ${{ github.workspace }}/docker
+        sudo mv /var/lib/docker ${{ github.workspace }}/docker
         sudo ln -sf ${{ github.workspace }}/docker /var/lib/docker
         sudo systemctl start docker
+
+    - name: Fetch ImageBuilder
+      run: |
+        set -e
+        # 官方 openwrt/imagebuilder 镜像同样是 bullseye 底（apt 源已失效），
+        # 改为宿主机下载官方 tarball、挂进 debian:13 容器跑
+        command -v zstd >/dev/null || sudo apt-get install -y zstd
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-imagebuilder-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "ImageBuilder tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p ${{ github.workspace }}/imagebuilder
+        tar -xf "$file" -C ${{ github.workspace }}/imagebuilder --strip-components=1
+        rm -f "$file" sha256sums
 
 
     - name: Prepare Packages
@@ -448,6 +589,7 @@ jobs:
         chmod +x $VOLUME_HOME/build_image.sh
         docker run -i --name openwrt-imagebuilder-${{ matrix.arch }}-${{ matrix.version }} \
          --user root \
+         -v $VOLUME_HOME/imagebuilder:$BUILD_DIR \
          -v $VOLUME_HOME/mypackages/:$BUILD_DIR/packages/mypackages/ \
          -v $VOLUME_HOME/openwrt_output/:/openwrt_output/ \
          -v $VOLUME_HOME/build_image.sh:/build_image.sh \
@@ -457,7 +599,7 @@ jobs:
          -e KERNEL_SIZE=${{ env.kernel_size }} \
          -e ARCH=${{ matrix.arch }} \
          -e VERSION=${{ matrix.version }} \
-         openwrt/imagebuilder:${{ matrix.arch }}-${{ matrix.version }} /build_image.sh 
+         debian:13 /build_image.sh
 
       env:
         rootfs_size: 4096

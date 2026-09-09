@@ -20,9 +20,11 @@ This repository contains GitHub Actions workflows for building custom OpenWRT fi
 
 Jobs run in parallel where possible; `build_image` depends on all package builds.
 
-### Docker Images Used
-- `openwrt/sdk:{arch}-{version}` - For compiling packages
-- `openwrt/imagebuilder:{arch}-{version}` - For creating firmware images
+### Build Environment
+- Package builds run in `debian:13` (trixie) containers; the OpenWrt SDK tarball is downloaded from downloads.openwrt.org and unpacked to `/builder` by each job's Prepare step (recreating the `/builder` + `buildbot` user layout the official SDK images had)
+- `build_image` downloads the ImageBuilder tarball on the host and runs `build_image.sh` in a `debian:13` container with the unpacked tree bind-mounted at `/builder`
+- The official `openwrt/sdk` / `openwrt/imagebuilder` Docker images are no longer used: they are based on Debian bullseye, whose apt security repo was retired when bullseye LTS ended 2026-08-31, breaking every job's `apt-get update`
+- Version discovery in the `setup` job parses the releases index at downloads.openwrt.org (no Docker Hub tag queries)
 
 ### Supported Targets
 - **Architectures**: `x86-64`, `rockchip-armv8`, `mediatek-filogic` (25.12+ only — the nradio profile was merged upstream after the 24.10 branch, so the setup job excludes filogic from the 24.10 matrix line)
