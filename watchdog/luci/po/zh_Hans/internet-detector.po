@@ -1,0 +1,802 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\nLanguage: zh_Hans\nPlural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Maximum number of modem restart attempts before Internet access is available."
+msgstr "持续断网时，本地调制解调器的重启次数上限；不控制外部 CPE 的重启次数。"
+
+msgid "Telegram notification"
+msgstr "Telegram 通知"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
+msgstr "LED 指示灯名称"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr "LED 指示灯控制"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> indicates the Internet status."
+msgstr "LED 指示灯用于显示联网或断网状态；关闭此模块不影响监测与恢复。"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> mode"
+msgstr "LED 指示灯模式"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> will display the link activity of this network device."
+msgstr "指示灯将显示所选网络设备的链路活动。"
+
+msgid "Add instance"
+msgstr "添加监测实例"
+
+msgid "After connection"
+msgstr "联网时"
+
+msgid "After disconnection"
+msgstr "断网时"
+
+msgid "Alive interval"
+msgstr "联网时检查间隔"
+
+msgid "Alive period"
+msgstr "联网后等待时间"
+
+msgid "An email will be sent when connected or disconnected from the Internet."
+msgstr "在联网或断网时发送邮件通知；此功能不参与网络连通性判断。"
+
+msgid "An error has occurred"
+msgstr "发生错误"
+
+msgid "Attempt interval"
+msgstr "重试间隔"
+
+msgid "Attempts"
+msgstr "执行次数上限"
+
+msgid "Big: 248 bytes"
+msgstr "较大：248 字节"
+
+msgid "Blinking (kernel: timer)"
+msgstr "闪烁（内核定时器模式）"
+
+msgid "Bot API token is missing!"
+msgstr "缺少机器人 API 令牌！"
+
+msgid "Bot token"
+msgstr "机器人令牌"
+
+msgid "Chat ID"
+msgstr "聊天编号"
+
+msgid "Check type"
+msgstr "连通性检查方式"
+
+msgid "Checking Internet availability."
+msgstr "预置 internet 实例默认每 5 分钟检查一次 HTTPS 网址列表；任意一个网址可连通即视为联网。全部失败后，断网脚本识别并重启 CPE，默认等待 2 分钟再检查，仍然全部失败才重启 OpenWrt。保持后台服务、开机自动启动和断网脚本开启，重启后会继续执行同一流程。"
+
+msgid "Checking the real public IP address."
+msgstr "获取对外显示的公网 IP 地址；这不用于判断是否断网。"
+
+msgid "Command failed"
+msgstr "命令执行失败"
+
+msgid "Connected"
+msgstr "已联网"
+
+msgid "Connection attempts"
+msgstr "每个目标的检查次数"
+
+msgid "Connection timeout"
+msgstr "单次连接超时"
+
+msgid "Contents have been saved."
+msgstr "内容已保存。"
+
+msgid "Curl is not available..."
+msgstr "未安装 curl，无法使用此功能。"
+
+msgid "DNS query type"
+msgstr "DNS 记录类型"
+
+msgid "Dead interval"
+msgstr "断网时检查间隔"
+
+msgid "Dead period"
+msgstr "断网后等待时间"
+
+msgid "Debug"
+msgstr "调试"
+
+msgid "Default port value for TCP connections."
+msgstr "TCP 检查使用的默认端口；本方案使用 HTTPS，不使用此选项。"
+
+msgid "Description"
+msgstr "实例说明"
+
+msgid "Device"
+msgstr "网络设备"
+
+msgid "Device timeout"
+msgstr "设备停启等待时间"
+
+msgid "Device will be rebooted when the Internet is disconnected."
+msgstr "此模块在持续断网后直接重启 OpenWrt 本机。本方案应关闭此模块，由断网脚本按顺序恢复。"
+
+msgid "Disable forced reboot"
+msgstr "不强制重启"
+
+msgid "Disabled"
+msgstr "已关闭"
+
+msgid "Disabled: detector is completely off."
+msgstr "关闭：完全停止监测，不会执行断网恢复。未配置 CPE 密码的新固件默认处于此模式。"
+
+msgid "Disconnected"
+msgstr "已断网"
+
+msgid "Dismiss"
+msgstr "关闭提示"
+
+msgid "Edit"
+msgstr "编辑"
+
+msgid "Edit down-script"
+msgstr "编辑断网脚本"
+
+msgid "Edit public-ip-script"
+msgstr "编辑公网 IP 变化脚本"
+
+msgid "Edit regular-script"
+msgstr "编辑定时脚本"
+
+msgid "Edit up-script"
+msgstr "编辑联网脚本"
+
+msgid "Email address of the recipient."
+msgstr "接收通知的邮箱地址。"
+
+msgid "Email address of the sender."
+msgstr "发送通知的邮箱地址。"
+
+msgid "Email notification"
+msgstr "邮件通知"
+
+msgid "Enable"
+msgstr "启用"
+
+msgid "Enable public-ip-script"
+msgstr "启用公网 IP 变化脚本"
+
+msgid "Enable this monitoring instance"
+msgstr "启用此监测实例"
+
+msgid "Enabled"
+msgstr "已启用"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Error!"
+msgstr "错误！"
+
+msgid "Expecting:"
+msgstr "请输入："
+
+msgid "Failed interval"
+msgstr "获取失败后的重试间隔"
+
+msgid "Failed to get %s init status: %s"
+msgstr "无法获取 %s 的开机启动状态：%s"
+
+msgid "Forced reboot delay"
+msgstr "正常重启失败后的强制重启等待时间"
+
+msgid "HTTPS URLs for checking Internet availability. Any response over verified HTTPS means online, including HTTP error responses."
+msgstr "只允许 https:// 网址。按列表顺序检查，任意一个网址通过证书验证并返回 HTTP 响应即视为联网，包括 4xx/5xx；不跟随跳转。全部失败才视为断网。可添加不同站点，避免单个站点故障导致重启。"
+
+msgid "Host alias"
+msgstr "消息中的设备名称"
+
+msgid "Host availability check type."
+msgstr "本方案必须选择“网址访问（验证 HTTPS）”。ICMP 或 TCP 不能作为本方案的连通性依据。"
+
+msgid "Host identifier in messages. If not specified, hostname will be used."
+msgstr "通知中显示的设备名称；留空时使用系统主机名。"
+
+msgid "Hostname/IP address of the SMTP server."
+msgstr "SMTP 邮件服务器的域名或 IP 地址。"
+
+msgid "Hosts"
+msgstr "检查目标主机"
+
+msgid "Hosts for checking Internet availability. Hosts are polled (in list order) until at least one responds."
+msgstr "ICMP 或 TCP 检查的目标列表，按顺序检查至首个成功目标。本方案使用 HTTPS 网址列表，不使用此列表。"
+
+msgid "Hosts polling interval when the Internet is down."
+msgstr "已断网时两轮检查之间的间隔。本方案设为 5 分钟。"
+
+msgid "Hosts polling interval when the Internet is up."
+msgstr "已联网时两轮检查之间的间隔。本方案设为 5 分钟。"
+
+msgid "Huge: 1492 bytes"
+msgstr "超大：1492 字节"
+
+msgid "ICMP packet data size"
+msgstr "ICMP 数据包大小"
+
+msgid "ICMP-echo request (ping)"
+msgstr "ICMP 回显（ping，本方案不使用）"
+
+msgid "ID"
+msgstr "获取编号"
+
+msgid "ID of the Telegram chat to which messages will be sent."
+msgstr "接收 Telegram 通知的聊天编号。"
+
+msgid "Incorrect bot token?"
+msgstr "机器人令牌可能不正确。"
+
+msgid "Info"
+msgstr "信息（推荐）"
+
+msgid "Instances"
+msgstr "监测实例"
+
+msgid "Interface"
+msgstr "网络接口"
+
+msgid "Interface timeout"
+msgstr "接口重启等待时间"
+
+msgid "Internet"
+msgstr "互联网"
+
+msgid "Internet Detector"
+msgstr "网络连通性监测"
+
+msgid "Internet detector mode"
+msgstr "监测运行方式"
+
+msgid "Internet status"
+msgstr "网络连通状态"
+
+msgid "Interval between IP address requests if the IP address is not defined."
+msgstr "未能获取公网 IP 时，重新查询前的等待时间。"
+
+msgid "Interval between IP address requests."
+msgstr "两次公网 IP 查询之间的间隔。"
+
+msgid "Interval between down-script runs."
+msgstr "持续断网时两次断网脚本执行之间的间隔，本方案设为 5 分钟。脚本有锁，恢复流程不会重叠执行。"
+
+msgid "Interval between modem restarts."
+msgstr "两次本地调制解调器重启之间的间隔。"
+
+msgid "Interval between network restarts."
+msgstr "两次 OpenWrt 网络重启之间的间隔。"
+
+msgid "Interval between up-script runs."
+msgstr "连续联网时两次联网脚本执行之间的间隔；本方案不使用联网脚本。"
+
+msgid "Invalid instance name..."
+msgstr "实例名称无效。"
+
+msgid "Jumbo: 9000 bytes"
+msgstr "巨型：9000 字节"
+
+msgid "Keep disabled for this workflow. The online script is unused; this option does not control service autostart."
+msgstr "本方案不使用联网脚本，此项保持关闭。它只控制首次检查已联网时是否执行联网脚本，不控制服务开机自启。"
+
+msgid "Keep disabled for this workflow. This built-in module reboots OpenWrt directly and does not reboot the external CPE first. User scripts already implement CPE restart, wait 2 minutes, then HTTPS recheck before deciding whether to reboot OpenWrt."
+msgstr "本方案必须关闭。这个内置模块会直接重启 OpenWrt，不会先重启外部 CPE。“用户脚本”已经实现：先重启 CPE，默认等待 2 分钟，再检查 HTTPS，仍全部失败才重启 OpenWrt。"
+
+msgid "Keep disabled for this workflow. This module restarts OpenWrt network interfaces or its network service, not the CPE. It is unnecessary for the ordered CPE recovery and may interrupt access to the router."
+msgstr "本方案保持关闭。此模块重启的是 OpenWrt 的网络接口或整个网络服务，不是 CPE；恢复流程不需要它，开启后可能中断路由器管理连接。"
+
+msgid "Keep disabled for this workflow. This runs a separate periodic script; it is not the 5-minute HTTPS check and is not required for CPE recovery."
+msgstr "本方案保持关闭。此模块执行额外的定时脚本，不是每 5 分钟一次的 HTTPS 检查，也不负责 CPE 恢复。"
+
+msgid "Keep disabled. This controls a local modem managed by ModemManager, not the external Huawei CPE at 192.168.10.1. The offline script identifies and reboots that CPE through its API."
+msgstr "本方案保持关闭。此模块只控制 ModemManager 管理的本地调制解调器，不控制 192.168.10.1 的外部华为 CPE；外部 CPE 由断网脚本识别型号并通过 API 重启。"
+
+msgid "Keep enabled: if the first check after service startup is offline, run recovery too. With service autostart enabled, this resumes recovery after every OpenWrt boot. The recovery script allows 5 minutes for boot networking."
+msgstr "本方案需要开启：服务启动后的首次检查若已断网，也执行恢复。配合服务开机自动启动，保证 OpenWrt 每次重启后仍会继续恢复。恢复脚本在开机后的前 5 分钟为网络启动留出宽限时间。"
+
+msgid "Keep enabled: start the service automatically after every OpenWrt boot. This does not enable the startup actions inside each module."
+msgstr "本方案需要保持“已启用”：每次 OpenWrt 开机后自动启动监测服务。此按钮立即切换开机自启状态；它不会自动开启各模块中的“服务启动时触发”动作。"
+
+msgid "Keep the internet instance enabled. This starts its checks, not the optional actions in other tabs."
+msgstr "本方案需要开启 internet 实例，用于持续检查网络。这不会自动开启其他标签页中的重启、通知或指示灯模块。"
+
+msgid "LED"
+msgstr "指示灯"
+
+msgid "LED control"
+msgstr "LED 指示灯"
+
+msgid "Link On"
+msgstr "链路建立时亮灯"
+
+msgid "Loading"
+msgstr "正在加载"
+
+msgid "Log event level."
+msgstr "系统日志的记录级别，推荐“信息”。本组件另有持久化审计日志，记录每轮检查与恢复步骤；系统日志级别不控制该审计日志。"
+
+msgid "Logging"
+msgstr "系统日志级别"
+
+msgid "Mailsend is not available..."
+msgstr "未安装 Mailsend，无法发送邮件。"
+
+msgid "Main settings"
+msgstr "主要设置"
+
+msgid "Maximum number of attempts to connect to each host."
+msgstr "每轮对每个目标的检查次数。本方案设为 1 次；不是 CPE 或 OpenWrt 的重启次数。"
+
+msgid "Maximum number of down-script run attempts before Internet access is available."
+msgstr "持续断网期间，断网脚本的执行次数上限。本方案必须选“不限次数”，保证后续断网和重启后仍可恢复。"
+
+msgid "Maximum number of network restart attempts before Internet access is available."
+msgstr "持续断网时，网络重启的次数上限；“不限次数”表示恢复联网前持续重试。"
+
+msgid "Maximum number of up-script run attempts when connected to the Internet."
+msgstr "连续联网期间，联网脚本的执行次数上限；本方案的联网脚本留空。"
+
+msgid "Maximum timeout for waiting for a response from the host."
+msgstr "单次检查等待响应的最长时间，本方案为 15 秒。HTTPS 会验证服务器证书；连接超时或证书验证失败均视为该目标不可达。"
+
+msgid "Modem will be restarted when the Internet is disconnected."
+msgstr "此模块重启 ModemManager 管理的本地调制解调器，不会通过 API 重启外部 CPE。"
+
+msgid "ModemManager is not available..."
+msgstr "未安装 ModemManager，无法使用此功能。"
+
+msgid "ModemManger interface. If specified, it will be restarted after restarting ModemManager."
+msgstr "ModemManager 管理的网络接口；指定后，会在重启 ModemManager 后重启该接口。"
+
+msgid "Network device activity (kernel: netdev)"
+msgstr "网络活动指示（内核 netdev 模式）"
+
+msgid "Network device for Internet access. If not specified, the default device is used."
+msgstr "连通性检查使用的网络设备；留空时按系统默认路由选择。一般保持留空。"
+
+msgid "Network device for sending messages. If not specified, the default device is used."
+msgstr "发送通知使用的网络设备；留空时按系统默认路由选择。"
+
+msgid "Network device or interface to restart. If not specified, then the network service is restarted."
+msgstr "要重启的 OpenWrt 设备或接口；留空会重启整个网络服务。此处不控制 CPE。"
+
+msgid "Network will be restarted when the Internet is disconnected."
+msgstr "此模块在断网后重启 OpenWrt 的网络接口或整个网络服务；本方案应保持关闭。"
+
+msgid "Next run"
+msgstr "下次执行时间"
+
+msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
+msgstr "未发现可用的 LED 指示灯。"
+
+msgid "No messages available. Write something to the bot and try again."
+msgstr "暂无消息；请先向机器人发送一条消息，再重试。"
+
+msgid "Not scheduled"
+msgstr "未安排执行"
+
+msgid "Notice"
+msgstr "通知"
+
+msgid "Number of attempts to request an IP address."
+msgstr "单轮公网 IP 查询的尝试次数。"
+
+msgid "Off"
+msgstr "熄灭"
+
+msgid "Off-state delay"
+msgstr "每次熄灭持续时间"
+
+msgid "Off-state delay for blinking option."
+msgstr "闪烁模式中每次熄灭的持续时间。"
+
+msgid "On"
+msgstr "点亮"
+
+msgid "On startup"
+msgstr "服务启动时触发（不是开机自启）"
+
+msgid "On-state delay"
+msgstr "每次点亮持续时间"
+
+msgid "On-state delay for blinking option."
+msgstr "闪烁模式中每次点亮的持续时间。"
+
+msgid "One of the following:"
+msgstr "可使用以下格式："
+
+msgid "Password"
+msgstr "密码"
+
+msgid "Password for SMTP authentication."
+msgstr "SMTP 邮件服务器的登录密码；不是 CPE 密码。"
+
+msgid "Period of time after connecting to Internet before up-script runs."
+msgstr "检测到联网后，执行联网脚本前等待的时间。"
+
+msgid "Period of time after connecting to the Internet before sending a message."
+msgstr "检测到联网后，发送通知前等待的时间。"
+
+msgid "Period of time after disconnecting from Internet before down-script runs."
+msgstr "检测到断网后，执行断网脚本前额外等待的时间。本方案设为 0 秒立即执行；CPE 重启后的 2 分钟等待由脚本负责。"
+
+msgid "Period of time after disconnecting from Internet before sending a message."
+msgstr "检测到断网后，发送通知前等待的时间。"
+
+msgid "Period of time without Internet access before modem restart."
+msgstr "持续断网达到此时长后，重启本地调制解调器。"
+
+msgid "Period of time without Internet access before network restart."
+msgstr "持续断网达到此时长后，重启 OpenWrt 网络。"
+
+msgid "Period of time without Internet access until the device is rebooted."
+msgstr "持续断网达到此时长后，直接重启 OpenWrt；不是 CPE 重启后的等待时间。"
+
+msgid "Polling interval"
+msgstr "查询间隔"
+
+msgid "Preset internet instance: enable monitoring; use verified HTTPS URL checks; check every 5 minutes both online and offline. Any one reachable URL means online. Keep direct checks without a proxy. The offline script handles CPE recovery."
+msgstr "预置 internet 实例：开启监测，选择“网址访问（验证 HTTPS）”；联网和断网时均每 5 分钟检查一次，任意一个网址可连通即视为联网。代理保持关闭，使用直接连接。CPE 恢复由“用户脚本”中的断网脚本负责。"
+
+msgid "Provider"
+msgstr "公网 IP 查询服务"
+
+msgid "Proxy"
+msgstr "代理"
+
+msgid "Proxy host"
+msgstr "代理服务器地址"
+
+msgid "Proxy password"
+msgstr "代理密码"
+
+msgid "Proxy port"
+msgstr "代理端口"
+
+msgid "Proxy user"
+msgstr "代理用户名"
+
+msgid "Public IP"
+msgstr "公网 IP"
+
+msgid "Public IP address"
+msgstr "公网 IP 查询"
+
+msgid "Reboot OpenWrt when initially offline"
+msgstr "首次已断网时直接重启 OpenWrt"
+
+msgid "Reboot device"
+msgstr "重启 OpenWrt"
+
+msgid "Reboot device if the Internet is disconnected at service startup."
+msgstr "开启此项后，服务的首次检查已断网也会触发直接重启 OpenWrt。本方案关闭整个此模块，避免跳过 CPE 优先恢复。"
+
+msgid "Receive"
+msgstr "接收流量"
+
+msgid "Recipient"
+msgstr "收件人"
+
+msgid "Recommended: leave disabled unless Telegram alerts are wanted and the bot is configured. Notifications do not control recovery. Startup notification does not enable boot supervision."
+msgstr "推荐保持关闭；需要 Telegram 通知且已配置机器人时才开启。通知不控制恢复。“首次检测符合条件时也通知”仍遵循所选网络状态和等待时间，不会启用开机自启。"
+
+msgid "Recommended: leave disabled unless email alerts are wanted and SMTP is configured. Notifications do not control recovery. Startup notification also applies to the first check if the selected state and waiting period match; it does not enable boot supervision."
+msgstr "推荐保持关闭；需要邮件通知且已配置 SMTP 时才开启。通知不控制恢复。“首次检测符合条件时也通知”仍遵循所选网络状态和等待时间，不表示开机自启。"
+
+msgid "Recommended: leave disabled. Optional LED display only; it does not detect connectivity or reboot anything. Module enable switches do not control service autostart."
+msgstr "推荐保持关闭。此模块仅让 LED 指示灯显示监测结果，可按需开启；它不独立检查网络，也不会重启设备。此处的开关只控制指示灯，不控制服务开机自启。"
+
+msgid "Recommended: leave disabled. Optional public IP display and IP-change script only; public IP results are not used to decide whether the Internet is reachable."
+msgstr "推荐保持关闭，可按需开启查看公网 IP。此模块仅查询公网 IP，并可在 IP 变化时执行脚本；查询结果不作为联网或断网依据。"
+
+msgid "Regular script"
+msgstr "定时脚本"
+
+msgid "Request chat ID from bot API"
+msgstr "从机器人 API 获取聊天编号"
+
+msgid "Required: enable this module. Use the offline script for recovery and leave the online script empty. In the offline tab: delay 0 seconds, attempts unlimited, retry interval 5 minutes, and run when initially offline enabled. These are actions after a detected outage, not additional HTTPS polling settings."
+msgstr "本方案必须开启此模块。只使用“断网脚本”恢复，“联网脚本”留空。断网子页：等待时间 0 秒、执行次数“不限次数”、重试间隔 5 分钟、“首次已断网时执行断网脚本”开启。这些是检测到断网之后的脚本设置；每轮 HTTPS 检查间隔在“主要设置”中配置。"
+
+msgid "Restart"
+msgstr "重新启动"
+
+msgid "Restart attempts"
+msgstr "重启次数上限"
+
+msgid "Restart local modem when initially offline"
+msgstr "首次已断网时重启本地调制解调器"
+
+msgid "Restart modem"
+msgstr "重启本地调制解调器"
+
+msgid "Restart modem if the Internet is disconnected at service startup."
+msgstr "服务首次检查已断网时，也触发本地调制解调器重启；不是 CPE API 重启。本方案关闭此模块。"
+
+msgid "Restart network"
+msgstr "重启 OpenWrt 网络"
+
+msgid "Restart network if the Internet is disconnected at service startup."
+msgstr "服务首次检查已断网时，也触发 OpenWrt 网络重启。本方案关闭此模块。"
+
+msgid "Restart network when initially offline"
+msgstr "首次已断网时重启 OpenWrt 网络"
+
+msgid "Restart service"
+msgstr "重新启动监测服务"
+
+msgid "Run down-script if the Internet is disconnected at service startup."
+msgstr "服务首次检查已断网时，也执行断网脚本；本方案需要开启。此项不等于服务开机自动启动。"
+
+msgid "Run if Internet state is"
+msgstr "允许执行的网络状态"
+
+msgid "Run interval"
+msgstr "脚本执行间隔"
+
+msgid "Run offline script when initially offline"
+msgstr "首次已断网时执行断网脚本"
+
+msgid "Run online script when initially online"
+msgstr "首次已联网时执行联网脚本"
+
+msgid "Run service at startup"
+msgstr "OpenWrt 开机自动启动服务"
+
+msgid "Run up-script if the Internet is connected at service startup."
+msgstr "服务首次检查已联网时，也执行联网脚本；本方案不需要，保持关闭。"
+
+msgid "Running"
+msgstr "正在运行"
+
+msgid "SMTP server"
+msgstr "SMTP 邮件服务器"
+
+msgid "SMTP server port"
+msgstr "SMTP 服务器端口"
+
+msgid "SSL: SMTP over SSL."
+msgstr "SSL：通过 SSL 加密连接邮件服务器。"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Security"
+msgstr "加密方式"
+
+msgid "Send message on service startup."
+msgstr "开启后，服务的首次检测符合所选联网或断网条件时也发送通知，仍遵循等待时间和重试设置；不控制服务开机自启。"
+
+msgid "Send notification on service startup"
+msgstr "首次检测符合条件时也通知"
+
+msgid "Sender"
+msgstr "发件人"
+
+msgid "Server response timeout"
+msgstr "服务器响应超时"
+
+msgid "Service"
+msgstr "后台服务"
+
+msgid "Service action failed \"%s %s\": %s"
+msgstr "服务操作“%s %s”失败：%s"
+
+msgid "Service configuration"
+msgstr "服务配置"
+
+msgid "Service for determining the public IP address."
+msgstr "用于获取公网 IP 地址的查询服务。"
+
+msgid "Service: detector always runs as a system service."
+msgstr "后台服务：持续监测，关闭网页也会运行。本方案需要选择此模式，并开启“OpenWrt 开机自动启动服务”。"
+
+msgid "Set the modem to be allowed to use any band."
+msgstr "允许本地调制解调器使用所有支持的频段；此功能不控制外部 CPE。"
+
+msgid "Shell commands that are run regularly."
+msgstr "按指定间隔执行独立的 Shell 脚本；本方案不需要，保持关闭。"
+
+msgid "Shell commands that run regularly at a specified interval. Current state of the Internet is available as value of the <code>$INET_STATE</code> variable (<code>0</code> - connected, <code>1</code> - disconnected)."
+msgstr "按指定间隔执行的 Shell 命令。变量 <code>$INET_STATE</code> 表示网络状态（<code>0</code> 联网，<code>1</code> 断网）。本方案不需要此定时脚本。"
+
+msgid "Shell commands that run when connected to the Internet."
+msgstr "检测到联网时执行的 Shell 命令。本方案不使用联网脚本：内容留空，“首次已联网时执行联网脚本”关闭。"
+
+msgid "Shell commands that run when the public IP address changes. New IP is available as value of the <code>$PUBLIC_IP</code> variable (empty string if undefined)."
+msgstr "公网 IP 变化时执行的 Shell 命令。变量 <code>$PUBLIC_IP</code> 为新地址，未获取时为空字符串；不参与 CPE 恢复流程。"
+
+msgid "Shell commands to run when connected or disconnected from the Internet."
+msgstr "在联网或断网时执行自定义脚本。本方案必须开启本模块，只使用断网脚本实现“先 CPE，后 OpenWrt”的恢复顺序。"
+
+msgid "Shell commands to run when disconnected from the Internet."
+msgstr "检测到断网后执行的 Shell 命令。预置脚本识别 CPE 型号并调用对应 API 重启，默认等待 2 分钟，再检测 HTTPS；仍全部失败才重启 OpenWrt。保留预置脚本，勿在此填写 CPE 密码。"
+
+msgid "Small: 1 byte"
+msgstr "小：1 字节"
+
+msgid "Standard: 56 bytes"
+msgstr "标准：56 字节"
+
+msgid "Stopped"
+msgstr "已停止"
+
+msgid "TCP port"
+msgstr "TCP 端口"
+
+msgid "TCP port connection"
+msgstr "TCP 端口连接（本方案不使用）"
+
+msgid "TLS: use STARTTLS if the server supports it."
+msgstr "TLS：服务器支持时使用 STARTTLS 升级为加密连接。"
+
+msgid "Telegram bot API token."
+msgstr "Telegram 机器人的 API 令牌。"
+
+msgid "Telegram message will be sent when connected or disconnected from the Internet."
+msgstr "在联网或断网时发送 Telegram 通知；此功能不参与连通性判断。"
+
+msgid "The type of record requested in the DNS query (if the service supports it)."
+msgstr "公网 IP 查询时使用的 DNS 记录类型（需要服务支持）。"
+
+msgid "Timeout between stopping and starting a ModemManger interface when restarting."
+msgstr "重启 ModemManager 接口时，停止后到重新启动前的等待时间。"
+
+msgid "Timeout between stopping and starting a network device when restarting."
+msgstr "重启网络设备时，停止后到重新启动前的等待时间。"
+
+msgid "To support HTTP services, you need to install curl."
+msgstr "使用 HTTP 公网 IP 查询服务需要安装 curl。"
+
+msgid "To support URL checking, you need to install curl."
+msgstr "使用 HTTPS 网址检查需要安装 curl。"
+
+msgid "Transmit"
+msgstr "发送流量"
+
+msgid "Type a time string"
+msgstr "输入时长，例如 0s、5m、2h、1d"
+
+msgid "URL test (HTTP)"
+msgstr "网址访问（HTTP，旧选项名称）"
+
+msgid "URL test (verified HTTPS)"
+msgstr "网址访问（验证 HTTPS）"
+
+msgid "URLs"
+msgstr "HTTPS 网址列表"
+
+msgid "URLs for checking Internet availability. URLs are polled (in list order) until at least one returns HTTP status code 200."
+msgstr "用于检查连通性的 HTTPS 网址列表；以本组件的 HTTPS 规则为准，不要求 HTTP 状态码为 200。"
+
+msgid "Unable to read the contents"
+msgstr "无法读取内容"
+
+msgid "Unable to save the contents"
+msgstr "无法保存内容"
+
+msgid "Undefined"
+msgstr "尚未确定"
+
+msgid "Unlock modem bands"
+msgstr "允许本地调制解调器使用所有频段"
+
+msgid "User"
+msgstr "用户名"
+
+msgid "User scripts"
+msgstr "用户脚本（CPE 恢复）"
+
+msgid "Username for SMTP authentication."
+msgstr "SMTP 邮件服务器的登录用户名。"
+
+msgid "Waiting for a reboot to complete before performing a forced reboot."
+msgstr "正常重启请求后等待此时长；仍未重启才强制重启。此选项属于内置 OpenWrt 重启模块，本方案关闭该模块。"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Web UI only (UI detector)"
+msgstr "仅网页监测（本方案不使用）"
+
+msgid "Web UI only: detector works only when the Web UI is open (UI detector)."
+msgstr "仅网页监测：只在打开页面时检测，无法在关闭页面后持续执行恢复。本方案不要选择此模式。"
+
+msgid "When email will be sent"
+msgstr "邮件发送时机"
+
+msgid "When message will be sent"
+msgstr "消息发送时机"
+
+msgid "Windows: 32 bytes"
+msgstr "Windows 默认：32 字节"
+
+msgid "You need to register a new %sTelegram bot%s. Then get the bot's API token and paste it into the <code>Bot token</code> field. After that, open a chat with the bot, write something (in the Telegram app) and you will be able to get the chat ID using the <code>ID</code> button."
+msgstr "请先创建 %sTelegram 机器人%s，将其 API 令牌填入“机器人令牌”。然后在 Telegram 中向机器人发送消息，点击“获取编号”即可获取聊天编号。"
+
+msgid "after connection"
+msgstr "联网后"
+
+msgid "after connection or disconnection"
+msgstr "联网或断网后"
+
+msgid "after disconnection"
+msgstr "断网后"
+
+msgid "connected"
+msgstr "联网"
+
+msgid "connected or disconnected"
+msgstr "联网或断网均可"
+
+msgid "days"
+msgstr "天"
+
+msgid "disconnected"
+msgstr "断网"
+
+msgid "down-script"
+msgstr "断网脚本"
+
+msgid "hour"
+msgstr "小时"
+
+msgid "hours"
+msgstr "小时"
+
+msgid "infinitely"
+msgstr "不限次数（0 表示不限）"
+
+msgid "min"
+msgstr "分钟"
+
+msgid "minutes"
+msgstr "分钟"
+
+msgid "msec"
+msgstr "毫秒"
+
+msgid "sec"
+msgstr "秒"
+
+msgid "seconds"
+msgstr "秒"
+
+msgid "up-script"
+msgstr "联网脚本"
+
+msgid "valid URL"
+msgstr "有效的 HTTPS 网址"
+msgid "Background monitoring service"
+msgstr "后台服务（持续运行）"
+
+msgid "Enable LED status display"
+msgstr "启用 LED 状态显示"
+
+msgid "Enable direct OpenWrt reboot"
+msgstr "启用直接重启 OpenWrt"
+
+msgid "Enable OpenWrt network restart"
+msgstr "启用 OpenWrt 网络重启"
+
+msgid "Enable local modem restart"
+msgstr "启用本地调制解调器重启"
+
+msgid "Enable public IP lookup"
+msgstr "启用公网 IP 查询"
+
+msgid "Enable email notifications"
+msgstr "启用邮件通知"
+
+msgid "Enable Telegram notifications"
+msgstr "启用 Telegram 通知"
+
+msgid "Enable connectivity scripts"
+msgstr "启用联网及断网脚本"
+
+msgid "Enable periodic script"
+msgstr "启用定时脚本"

@@ -91,3 +91,23 @@ procd reports running and startup symlinks exist. Two detector rounds were
 observed approximately 300 seconds apart. Persistent records exclude the actual
 credential value. Audit logs correlate each recovery with the last completed
 detector decision and fsync before any reboot request.
+
+## Chinese LuCI follow-up
+
+The user requested full Chinese labels and unambiguous guidance for each tab,
+including service autostart versus actions on the first detected network state.
+Added the zh_Hans catalog and its zh-cn package to the SDK job and glue dependency.
+All installed tabs and both script sub-tabs have Chinese purpose/recommendation
+text. Optional modem/email/Telegram pages are covered too. Independent labels
+avoid core catalog overrides for background mode and module enable switches.
+Default script comments are Chinese and remain protected conffiles.
+
+- [x] Regression checks fail on the original missing 15-second timeout and on
+  ambiguous core-translated mode/enable captions, then pass with the changes.
+- [x] Both SDK formats compile; extracted APK/IPK Chinese catalogs match.
+- [x] Router upgraded to detector r3, LuCI app r4, glue r3 and Chinese language
+  package; configured down-script checksum is unchanged, password mode is 0600.
+- [x] Live Chromium verifies seven tabs and both script sub-tabs; no save or
+  reboot action is invoked by the browser checks.
+- [x] Native Lua/LuCI checks and 26 recovery tests pass; two healthy detector
+  rounds approximately 300 seconds apart were observed after the initial UI update.

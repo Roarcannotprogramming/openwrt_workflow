@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cpe-watchdog
 PKG_VERSION:=1.0.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_LICENSE:=MIT
 
 include $(INCLUDE_DIR)/package.mk
@@ -12,7 +12,7 @@ define Package/cpe-watchdog
   CATEGORY:=Network
   TITLE:=HTTPS CPE recovery for Internet Detector
   PKGARCH:=all
-  DEPENDS:=+internet-detector +luci-app-internet-detector +curl +ca-bundle +python3
+  DEPENDS:=+internet-detector +luci-app-internet-detector +luci-i18n-internet-detector-zh-cn +curl +ca-bundle +python3
 endef
 
 define Package/cpe-watchdog/description

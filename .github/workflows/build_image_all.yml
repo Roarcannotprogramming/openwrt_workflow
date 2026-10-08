@@ -486,6 +486,7 @@ jobs:
         tar -xzf "$archive" -C "$TMPDIR/internet-detector" --strip-components=1
         patch --batch -d "$TMPDIR/internet-detector" -p1 < watchdog/patches/001-https-connectivity.patch
         python3 tests/verify_detector_patch.py "$TMPDIR/internet-detector"
+        python3 tests/verify_luci_translation.py "$TMPDIR/internet-detector"
 
   build_watchdog:
     needs: [setup, test_watchdog]

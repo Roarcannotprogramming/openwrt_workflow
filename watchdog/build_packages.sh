@@ -25,6 +25,9 @@ source_dir="$BUILD_DIR/package/cpe-connectivity"
 mkdir -p "$source_dir"
 tar -xzf "$archive" -C "$source_dir" --strip-components=1
 patch --batch --forward -d "$source_dir" -p1 < "$COMPONENT_DIR/patches/001-https-connectivity.patch"
+mkdir -p "$source_dir/luci-app-internet-detector/po/zh_Hans"
+cp "$COMPONENT_DIR/luci/po/zh_Hans/internet-detector.po" \
+    "$source_dir/luci-app-internet-detector/po/zh_Hans/"
 mkdir -p "$BUILD_DIR/package/cpe-watchdog"
 cp "$COMPONENT_DIR/Makefile" "$BUILD_DIR/package/cpe-watchdog/Makefile"
 rm -rf -- "$BUILD_DIR/package/cpe-watchdog/overlay"
@@ -56,6 +59,8 @@ cat > .config <<'EOF'
 # CONFIG_ALL_KMODS is not set
 CONFIG_PACKAGE_internet-detector=m
 CONFIG_PACKAGE_luci-app-internet-detector=m
+CONFIG_LUCI_LANG_zh_Hans=y
+CONFIG_PACKAGE_luci-i18n-internet-detector-zh-cn=m
 CONFIG_PACKAGE_cpe-watchdog=m
 EOF
 chown "$BUILDER:$BUILDER" .config
@@ -70,7 +75,7 @@ done
 
 mkdir -p "$OUTPUT_DIR"
 # Detect output format from the actual SDK rather than guessing from "master".
-for package in internet-detector luci-app-internet-detector cpe-watchdog; do
+for package in internet-detector luci-app-internet-detector luci-i18n-internet-detector-zh-cn cpe-watchdog; do
     mapfile -t artifacts < <(find bin/packages -type f \
         \( -name "${package}_*.ipk" -o -name "${package}-[0-9]*.apk" \))
     if [ "${#artifacts[@]}" = 0 ]; then
