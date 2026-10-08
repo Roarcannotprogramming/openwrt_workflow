@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+watchdog-packages/
+watchdog/overlay/etc/cpe-watchdog/password

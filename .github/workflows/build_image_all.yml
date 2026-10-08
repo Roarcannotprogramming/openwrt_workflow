@@ -464,8 +464,82 @@ jobs:
         path: uuplugin-out
         retention-days: 7
 
+  test_watchdog:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Test recovery and patched Internet Detector
+      shell: bash
+      run: |
+        set -euo pipefail
+        export TMPDIR="$HOME/.paseo/.tmp"
+        mkdir -p "$TMPDIR"
+        sudo apt-get update
+        sudo apt-get install -y liblua5.3-0 curl openssl nodejs
+        python3 -m unittest discover -s tests -v
+        source watchdog/source.env
+        archive="$TMPDIR/internet-detector.tar.gz"
+        curl --fail --location --retry 3 --retry-all-errors --max-time 120 \
+          "https://codeload.github.com/gSpotx2f/luci-app-internet-detector/tar.gz/$INTERNET_DETECTOR_REVISION" -o "$archive"
+        echo "$INTERNET_DETECTOR_SHA256  $archive" | sha256sum --check
+        mkdir -p "$TMPDIR/internet-detector"
+        tar -xzf "$archive" -C "$TMPDIR/internet-detector" --strip-components=1
+        patch --batch -d "$TMPDIR/internet-detector" -p1 < watchdog/patches/001-https-connectivity.patch
+        python3 tests/verify_detector_patch.py "$TMPDIR/internet-detector"
+
+  build_watchdog:
+    needs: [setup, test_watchdog]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    name: Build HTTPS Watchdog for OpenWRT-${{ matrix.arch }}-${{ matrix.version }}
+    runs-on: ubuntu-latest
+    container:
+      image: debian:13
+      options: --user root
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Prepare Debian 13 + OpenWrt SDK
+      run: |
+        set -e
+        export TMPDIR="$HOME/.paseo/.tmp"
+        mkdir -p "$TMPDIR"
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          sudo git wget curl ca-certificates xz-utils zstd tree \
+          build-essential gawk gettext file libncurses-dev zlib1g-dev swig python3-pyelftools \
+          python3 python3-setuptools rsync unzip
+        useradd -M -d /builder -s /bin/bash buildbot
+        case "${{ matrix.arch }}" in
+          x86-64) target=x86/64 ;;
+          rockchip-armv8) target=rockchip/armv8 ;;
+          mediatek-filogic) target=mediatek/filogic ;;
+        esac
+        base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
+        curl -sfO "$base/sha256sums"
+        file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
+        echo "SDK tarball: $file"
+        wget -q "$base/$file"
+        grep -F "$file" sha256sums | sha256sum -c -
+        mkdir -p /builder
+        tar -xf "$file" -C /builder --strip-components=1
+        rm -f "$file" sha256sums
+        chown -R buildbot:buildbot /builder
+    - uses: actions/checkout@v5
+    - name: Build Internet Detector and CPE recovery packages
+      run: bash watchdog/build_packages.sh
+    - uses: actions/upload-artifact@v7
+      with:
+        name: watchdog-${{ matrix.arch }}-${{ matrix.version }}
+        path: watchdog-packages
+        if-no-files-found: error
+        retention-days: 7
+
   build_image:
-    needs: [setup, build_passwall, build_theme_argon, build_bandix, build_uuplugin]
+    needs: [setup, build_passwall, build_theme_argon, build_bandix, build_uuplugin, build_watchdog]
     if: ${{ always() }}
     strategy:
       fail-fast: false
@@ -505,6 +579,9 @@ jobs:
     - uses: actions/download-artifact@v8
       with:
         name: uuplugin-${{ matrix.arch }}-${{ matrix.version }}
+    - uses: actions/download-artifact@v8
+      with:
+        name: watchdog-${{ matrix.arch }}-${{ matrix.version }}
     # - uses: actions/download-artifact@v8
     #   with:
     #     name: luci-app-netdata-${{ matrix.arch }}-${{ matrix.version }}
@@ -561,7 +638,7 @@ jobs:
       run: |
         # 三个 arch 共用的主列表（与改动前的全局列表逐字对应，抽走的四个
         # arch 相关包在下面分支里补回，集合等价）
-        COMMON="luci luci-app-qos luci-app-upnp luci-proto-ipv6"
+        COMMON="luci luci-app-qos luci-app-upnp luci-proto-ipv6 cpe-watchdog"
         COMMON="$COMMON luci-i18n-base-zh-cn netdata luci-app-ttyd pciutils"
         COMMON="$COMMON coreutils-timeout lm-sensors lm-sensors-detect fdisk shadow-useradd -dnsmasq"
         COMMON="$COMMON vim python3 sudo ipset samba4-server wget-ssl"

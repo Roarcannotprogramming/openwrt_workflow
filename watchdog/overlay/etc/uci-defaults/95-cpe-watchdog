@@ -1,0 +1,12 @@
+#!/bin/sh
+# Configure the packaged detector once; preserve user settings on sysupgrade.
+if [ "$(uci -q get cpe-watchdog.main.initialized)" != '1' ]; then
+    cp /usr/share/cpe-watchdog/internet-detector.conf /etc/config/internet-detector
+    mkdir -p /etc/internet-detector
+    cp /usr/share/cpe-watchdog/down-script.internet /etc/internet-detector/down-script.internet
+    uci set cpe-watchdog.main.initialized='1'
+    uci commit cpe-watchdog
+fi
+# Enable boot supervision, but leave automatic recovery disabled until provisioned.
+/etc/init.d/internet-detector enable
+exit 0

@@ -1,0 +1,193 @@
+--- a/internet-detector/Makefile
++++ b/internet-detector/Makefile
+@@ -6,7 +6,7 @@
+ 
+ PKG_NAME:=internet-detector
+ PKG_VERSION:=1.7.4
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
+ PKG_MAINTAINER:=gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
+ 
+ include $(INCLUDE_DIR)/package.mk
+--- a/internet-detector/files/usr/lib/lua/internet-detector/main.lua
++++ b/internet-detector/files/usr/lib/lua/internet-detector/main.lua
+@@ -27,7 +27,7 @@
+ 	pingCmd         = "/bin/ping",
+ 	pingParams      = "-c 1",
+ 	curlExec        = "/usr/bin/curl",
+-	curlParams      = '-s -g --no-keepalive --head --user-agent "Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0"',
++	curlParams      = '-s -g --no-keepalive --proto "=https" --noproxy "*" --output /dev/null --dump-header - --user-agent "Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0"',
+ 	curlHttpOkCodes = {
+ 		[200] = true,
+ 		[202] = true,
+@@ -342,15 +342,18 @@
+ end
+ 
+ function InternetDetector:httpRequest(url)
++	if not tostring(url):match("^https://") then return 1, nil end
++	local quotedUrl = "\'" .. tostring(url):gsub("\'", "\'\\\'\'") .. "\'"
+ 	local retCode = 1, data
+ 	local curl = string.format(
+-		'%s%s%s --connect-timeout %s %s "%s"; printf "\n$?";',
++		'%s%s%s --connect-timeout %s --max-time %s %s %s; printf "\n$?";',
+ 		self.curlExec,
+ 		self.serviceConfig.iface and (" --interface " .. self.serviceConfig.iface) or "",
+ 		self.proxyString,
+ 		self.serviceConfig.connection_timeout,
++		self.serviceConfig.connection_timeout,
+ 		self.curlParams,
+-		url
++		quotedUrl
+ 	)
+ 	local fh = io.popen(curl, "r")
+ 	if fh then
+@@ -380,23 +383,48 @@
+ 
+ function InternetDetector:getHTTPCode(data)
+ 	local httpCode
+-	local respHeader = data:match("^HTTP/[^%c]+")
+-	if respHeader then
+-		httpCode = respHeader:match("%d%d%d")
+-	end
+-	return tonumber(httpCode)
++	-- Interim responses (e.g. 103 Early Hints) precede the final status.
++	for line in data:gmatch("[^\r\n]+") do
++		local code = line:match("^HTTP/%S+%s+(%d%d%d)")
++		if code then httpCode = tonumber(code) end
++	end
++	return httpCode
+ end
+ 
+ function InternetDetector:checkURL(url)
++	local started = os.time()
+ 	local httpCode
+ 	local retCode, data = self:httpRequest(url)
+ 	if retCode == 0 and data then
+ 		httpCode = self:getHTTPCode(data)
+ 	end
+-	return (not self.curlHttpOkCodes[httpCode]) and 1 or 0
++	local online = httpCode and httpCode >= 200 and httpCode <= 599
++	local target = tostring(url):match("^https?://([^/?#]+)") or "invalid"
++	target = target:gsub(".*@", "")
++	self:auditEvent("https_probe", { target = target, index = self.auditIndex or 0,
++		result = online and retCode == 0 and "online" or "offline", curl_rc = retCode,
++		http_status = httpCode or 0, elapsed_s = os.time() - started })
++	return (online and retCode == 0) and 0 or 1
++end
++
++function InternetDetector:auditEvent(event, fields)
++	local function quote(value)
++		return "'" .. tostring(value):gsub("'", "'\\''") .. "'"
++	end
++	local args = { quote(event), quote("source=detector"),
++		quote("instance=" .. tostring(self.serviceConfig.instance or "internet")),
++		quote("cycle=" .. tostring((fields or {}).cycle or self.auditCycle or "startup")) }
++	for key, value in pairs(fields or {}) do
++		if key ~= "cycle" then args[#args + 1] = quote(key .. "=" .. tostring(value)) end
++	end
++	local result = os.execute("/usr/bin/python3 /usr/lib/cpe-watchdog/audit.py " .. table.concat(args, " "))
++	if result ~= 0 and result ~= true then
++		self:writeLogMessage("err", "CPE watchdog audit command failed")
++	end
+ end
+ 
+ function InternetDetector:exit()
++	self:auditEvent("service_stopped", {})
+ 	for _, e in ipairs(self.modules) do
+ 		e:onExit()
+ 	end
+@@ -428,6 +456,7 @@
+ 	local checking      = false
+ 	local hostNum       = 1
+ 	local attempt       = 1
++	local roundChecked  = 0
+ 
+ 	local checkFunc = self.TCPConnectionToHost
+ 	if self.serviceConfig.check_type == 1 then
+@@ -460,6 +489,12 @@
+ 
+ 	while true do
+ 		if counter == 0 or counter >= interval then
++			if not checking then
++				self.auditSequence = (self.auditSequence or 0) + 1
++				self.auditCycle = string.format("detector-%s-%s-%s", unistd.getpid(), os.time(), self.auditSequence)
++				roundChecked = 0
++				self:auditEvent("https_round_started", { targets = #self.parsedHosts, interval_s = interval })
++			end
+ 			checking = true
+ 		end
+ 
+@@ -472,6 +507,8 @@
+ 					local addr    = self.parsedHosts[hostNum].addr
+ 					local port    = self.parsedHosts[hostNum].port
+ 					local retCode = 1
++					self.auditIndex = hostNum
++					roundChecked = roundChecked + 1
+ 					if self.debug then
+ 						retCode = checkFunc(self, addr, port)
+ 					else
+@@ -518,6 +555,9 @@
+ 			end
+ 
+ 			if inetChecked then
++				self.auditDecisionCycle = self.auditCycle
++				self:auditEvent("https_round", { result = newStatus == 0 and "online" or "offline",
++					checked = roundChecked, skipped = math.max(0, #self.parsedHosts - roundChecked) })
+ 				currentStatus = newStatus
+ 				if not stat.stat(self.statusFile) then
+ 					self:writeValueToFile(self.statusFile, self:statusJson(
+@@ -741,6 +781,7 @@
+ 		syslog.openlog(self.appName, syslog.LOG_PID, syslog.LOG_DAEMON)
+ 	end
+ 	self:writeLogMessage("info", "started")
++	self:auditEvent("service_started", { targets = #(self.serviceConfig.urls or {}) })
+ 	self:loadModules()
+ 
+ 	-- Loaded modules
+--- a/internet-detector/files/usr/lib/lua/internet-detector/modules/mod_user_scripts.lua
++++ b/internet-detector/files/usr/lib/lua/internet-detector/modules/mod_user_scripts.lua
+@@ -32,7 +32,12 @@
+ 
+ function Module:runExternalScript(scriptPath)
+ 	if unistd.access(scriptPath, "r") then
+-		os.execute(string.format('/bin/sh "%s" &', scriptPath))
++		if scriptPath == self.downScript and self.config.auditEvent then
++			self.config:auditEvent("recovery_dispatched", { action = "down_script",
++				cycle = self.config.auditDecisionCycle or self.config.auditCycle or "startup" })
++		end
++		os.execute(string.format('CPE_WATCHDOG_DETECTOR_CYCLE=%q /bin/sh "%s" &',
++			tostring(self.config.auditDecisionCycle or self.config.auditCycle or "startup"), scriptPath))
+ 	end
+ end
+ 
+--- a/luci-app-internet-detector/Makefile
++++ b/luci-app-internet-detector/Makefile
+@@ -6,7 +6,7 @@
+ 
+ PKG_NAME:=luci-app-internet-detector
+ PKG_VERSION:=1.7.4
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
+ LUCI_TITLE:=LuCI support for internet-detector
+ LUCI_DEPENDS:=+internet-detector
+ LUCI_PKGARCH:=all
+--- a/luci-app-internet-detector/htdocs/luci-static/resources/view/internet-detector.js
++++ b/luci-app-internet-detector/htdocs/luci-static/resources/view/internet-detector.js
+@@ -477,7 +477,7 @@
+ 	},
+ 
+ 	validateUrl(section, value) {
+-		return (/^$|^https?:\/\/([\w.-]+|\[[a-fA-F0-9:.]+\])(:[0-9]{2,5})?((\/|\?).*)?$/.test(value)) ?
++		return (/^$|^https:\/\/([\w.-]+|\[[a-fA-F0-9:.]+\])(:[0-9]{2,5})?((\/|\?).*)?$/.test(value)) ?
+ 			true : _('Expecting:') + ` ${_('valid URL')}\n`;
+ 	},
+ 
+@@ -851,7 +851,7 @@
+ 			// urls
+ 			o = s.taboption('main', form.DynamicList,
+ 				'urls', _('URLs'),
+-				_('URLs for checking Internet availability. URLs are polled (in list order) until at least one returns HTTP status code 200.')
++				_('HTTPS URLs for checking Internet availability. Any response over verified HTTPS means online, including HTTP error responses.')
+ 			);
+ 			o.validate  = this.validateUrl;
+ 			o.default   = this.defaultURLs;

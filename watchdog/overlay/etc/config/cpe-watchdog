@@ -1,0 +1,6 @@
+config recovery 'main'
+    option address 'http://192.168.10.1'
+    option username 'admin'
+    option password_file '/etc/cpe-watchdog/password'
+    option recovery_wait '120'
+    option reboot_command '/sbin/reboot'

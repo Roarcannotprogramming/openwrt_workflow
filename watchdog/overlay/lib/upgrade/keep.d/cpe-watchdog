@@ -1,0 +1,4 @@
+/etc/config/cpe-watchdog
+/etc/config/internet-detector
+/etc/internet-detector/
+/etc/cpe-watchdog/
