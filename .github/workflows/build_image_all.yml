@@ -76,10 +76,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "SDK tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p /builder
         tar -xf "$file" -C /builder --strip-components=1
@@ -208,10 +209,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "SDK tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p /builder
         tar -xf "$file" -C /builder --strip-components=1
@@ -273,10 +275,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "SDK tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p /builder
         tar -xf "$file" -C /builder --strip-components=1
@@ -353,10 +356,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "SDK tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p /builder
         tar -xf "$file" -C /builder --strip-components=1
@@ -435,10 +439,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "SDK tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p /builder
         tar -xf "$file" -C /builder --strip-components=1
@@ -545,10 +550,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-sdk-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "SDK tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p /builder
         tar -xf "$file" -C /builder --strip-components=1
@@ -633,10 +639,11 @@ jobs:
           mediatek-filogic) target=mediatek/filogic ;;
         esac
         base="https://downloads.openwrt.org/releases/${{ matrix.version }}/targets/$target"
-        curl -sfO "$base/sha256sums"
+        curl -fsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 60 --output sha256sums "$base/sha256sums"
         file=$(awk '{name=$2; sub(/^\*/,"",name)} name ~ /^openwrt-imagebuilder-.*\.tar\.(xz|zst)$/ {print name; exit}' sha256sums)
         echo "ImageBuilder tarball: $file"
-        wget -q "$base/$file"
+        test -n "$file" || { echo "ERROR: no matching OpenWrt archive in $base/sha256sums" >&2; exit 1; }
+        curl -fLsS --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 300 --output "$file" "$base/$file"
         grep -F "$file" sha256sums | sha256sum -c -
         mkdir -p ${{ github.workspace }}/imagebuilder
         tar -xf "$file" -C ${{ github.workspace }}/imagebuilder --strip-components=1
