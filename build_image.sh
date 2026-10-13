@@ -29,7 +29,15 @@ if [[ "$VERSION" == 25.* ]]; then
     sed -i 's/CONFIG_SIGNATURE_CHECK=y/# CONFIG_SIGNATURE_CHECK is not set/' .config
 fi
 
+if [[ "$VERSION" == 24.* ]]; then
+    package_format=ipk
+else
+    package_format=apk
+fi
+python3 /verify_passwall_artifacts.py packages packages/mypackages --format "$package_format"
 sudo -u $BUILDER make image PROFILE=$PROFILE PACKAGES="$PACKAGES packages/mypackages/*"
+# Check what actually entered the image, before publishing any firmware files.
+python3 /verify_passwall_artifacts.py manifests bin/targets
 tree bin/targets
 if [ "$ARCH" == "x86-64" ]; then
     cp bin/targets/x86/64/* /openwrt_output/ 
