@@ -505,8 +505,9 @@ jobs:
         export TMPDIR="$HOME/.paseo/.tmp"
         mkdir -p "$TMPDIR"
         sudo apt-get update
-        sudo apt-get install -y liblua5.3-0 curl openssl nodejs
-        python3 -m unittest discover -s tests -v
+        sudo apt-get install -y liblua5.3-0 curl openssl nodejs python3-cryptography
+        /usr/bin/python3 -m unittest discover -s tests -v
+        node tests/test_history_ui.js
         source watchdog/source.env
         archive="$TMPDIR/internet-detector.tar.gz"
         curl --fail --location --retry 3 --retry-all-errors --max-time 120 \

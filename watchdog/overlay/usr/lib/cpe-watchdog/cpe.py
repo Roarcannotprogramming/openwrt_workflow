@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import secrets
 import stat
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -23,18 +24,28 @@ class UnsupportedModel(CpeError):
     pass
 
 
-def read_password(path):
+def read_private_file(path, limit=4096):
     try:
-        with open(path, 'r') as file:
+        with open(path, 'rb') as file:
             info = os.fstat(file.fileno())
             if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o077:
                 raise CpeError('Credential file must be owned by the service user with mode 0600')
-            password = file.read(4096).rstrip('\r\n')
+            value = file.read(limit + 1)
     except OSError:
         raise CpeError('Credential file is missing or unreadable') from None
-    if not password:
+    if not value or len(value) > limit:
         raise CpeError('Credential file is empty')
-    return password
+    return value
+
+
+def read_password(path):
+    try:
+        password = read_private_file(path).decode().rstrip('\r\n')
+        if not password:
+            raise CpeError('Credential file is empty')
+        return password
+    except UnicodeError:
+        raise CpeError('Credential file must contain UTF-8 text') from None
 
 
 class HuaweiCpe:
@@ -51,6 +62,7 @@ class HuaweiCpe:
             urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
     def request(self, path, fields=None, xml=True):
+        started = time.monotonic()
         write_event('cpe_api_request', api=path)
         headers = {'X-Requested-With': 'XMLHttpRequest', '_ResponseSource': 'Broswer'}
         data = None
@@ -69,6 +81,8 @@ class HuaweiCpe:
                     raise CpeError('CPE response exceeds size limit')
                 if body[:2] == b'\x1f\x8b':
                     body = gzip.decompress(body)
+                if len(body) > 131072:
+                    raise CpeError('CPE response exceeds size limit')
                 for key in ('__RequestVerificationTokenone', '__RequestVerificationToken'):
                     if response.headers.get(key):
                         self.token = response.headers[key].split('#')[0]
@@ -78,8 +92,14 @@ class HuaweiCpe:
                 return body
             root = ET.fromstring(body)
         except (OSError, urllib.error.URLError, ET.ParseError, EOFError) as error:
-            write_event('cpe_api_response', api=path, result='failed', error_type=type(error).__name__)
-            raise CpeError('CPE request failed: ' + path) from None
+            write_event('cpe_api_response', api=path, result='failed', error_type=type(error).__name__,
+                reason=type(getattr(error, 'reason', error)).__name__,
+                http_status=getattr(error, 'code', None), elapsed_s=round(time.monotonic()-started, 3))
+            failure = CpeError('CPE request failed: ' + path)
+            failure.http_status = getattr(error, 'code', None)
+            if isinstance(error, urllib.error.HTTPError):
+                error.close()
+            raise failure from None
         if root.tag == 'error':
             code=root.findtext('code','unknown')
             code=code if code.isdigit() else 'unknown'
@@ -142,7 +162,15 @@ class HuaweiCpe:
 
 
 def detect_model(address):
-    model = HuaweiCpe(address).request('/api/device/basic_information').findtext('devicename')
+    try:
+        model = HuaweiCpe(address).request('/api/device/basic_information').findtext('devicename')
+    except CpeError as error:
+        # Only a missing Huawei endpoint permits the alternate model probe.
+        # A timeout or Huawei API error must not lead to guessed control requests.
+        if getattr(error, 'http_status', None) not in (400, 404):
+            raise
+        from fiberhome import FiberhomeCpe
+        model = FiberhomeCpe(address).detect_model()
     if not model:
         raise CpeError('CPE model identification failed')
     model=model.strip()
@@ -153,11 +181,26 @@ def detect_model(address):
 MODEL_HANDLERS = {'H155-380': HuaweiCpe}
 
 
-def reboot_cpe(address, username, password_file):
-    model = detect_model(address)
+def model_client(address, model):
+    if model == 'LG6851F':
+        from fiberhome import FiberhomeCpe
+        return FiberhomeCpe(address)
     if model not in MODEL_HANDLERS:
         raise UnsupportedModel('Unsupported CPE model: ' + model)
-    client = MODEL_HANDLERS[model](address)
+    return MODEL_HANDLERS[model](address)
+
+
+def authenticate_cpe(address, username, password_file):
+    model = detect_model(address)
+    client = model_client(address, model)
+    client.login(username, read_password(password_file))
+    client.logout()
+    return model
+
+
+def reboot_cpe(address, username, password_file):
+    model = detect_model(address)
+    client = model_client(address, model)
     client.login(username, read_password(password_file))
     try:
         client.reboot()

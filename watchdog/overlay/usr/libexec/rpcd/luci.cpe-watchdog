@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+"""rpcd exec plugin for sanitized cpe-watchdog history."""
+import json
+from pathlib import Path
+import sys
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'lib/cpe-watchdog'))
+import history  # noqa: E402
+
+
+METHODS = {
+    'query': {
+        'page': 0, 'page_size': 0,
+        'date': '', 'event': '',
+    },
+    'export': {
+        'offset': 0, 'limit': 0,
+        'date': '', 'event': '', 'snapshot': '',
+    },
+}
+
+
+def output(value):
+    json.dump(value, sys.stdout, ensure_ascii=True, separators=(',', ':'))
+    sys.stdout.write('\n')
+
+
+def main(argv):
+    if len(argv) == 2 and argv[1] == 'list':
+        output(METHODS)
+        return 0
+    if len(argv) != 3 or argv[1] != 'call' or argv[2] not in METHODS:
+        output({'error': 'method_not_found'})
+        return 0
+    try:
+        params = json.load(sys.stdin)
+        # uhttpd adds this authenticated transport field to HTTP ubus calls.
+        # It is not a history filter and must never be echoed or persisted.
+        if isinstance(params, dict):
+            params.pop('ubus_rpc_session', None)
+        if argv[2] == 'query':
+            result = history.query(params)
+        else:
+            result = history.export_chunk(params)
+    except (json.JSONDecodeError, history.InvalidParams) as error:
+        output({'error': 'invalid_params', 'message': str(error)})
+        return 0
+    except OSError:
+        output({'error': 'history_unavailable'})
+        return 0
+    output(result)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main(sys.argv))

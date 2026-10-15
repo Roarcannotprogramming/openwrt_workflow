@@ -1,0 +1,13 @@
+{
+	"admin/status/cpe-watchdog-logs": {
+		"title": "CPE 恢复日志",
+		"order": 90,
+		"action": {
+			"type": "view",
+			"path": "cpe-watchdog-logs"
+		},
+		"depends": {
+			"acl": [ "luci-app-cpe-watchdog" ]
+		}
+	}
+}

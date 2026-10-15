@@ -14,7 +14,7 @@ import time
 from urllib.parse import urlsplit
 
 from audit import write_event
-from cpe import CpeError, HuaweiCpe, detect_model, read_password, reboot_cpe
+from cpe import CpeError, HuaweiCpe, detect_model, read_password, reboot_cpe, authenticate_cpe
 
 LOG = logging.getLogger('cpe-watchdog')
 
@@ -174,12 +174,8 @@ def main():
             return 0
         validate_credentials(settings.password_file)
         if args.action == 'authenticate':
-            if detect_model(settings.cpe_address) != 'H155-380':
-                raise CpeError('Unsupported CPE model')
-            client = HuaweiCpe(settings.cpe_address)
-            client.login(settings.username, read_password(settings.password_file))
-            client.logout()
-            write_event('cpe_authentication_verified')
+            model = authenticate_cpe(settings.cpe_address, settings.username, settings.password_file)
+            write_event('cpe_authentication_verified', model=model)
             print('Authentication verified; no reboot requested')
             return 0
         with open('/var/run/cpe-watchdog.lock', 'a') as lock:

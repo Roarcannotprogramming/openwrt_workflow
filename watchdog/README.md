@@ -2,7 +2,7 @@
 
 The unified firmware workflow builds four packages: `internet-detector`,
 `luci-app-internet-detector`, `luci-i18n-internet-detector-zh-cn`, and `cpe-watchdog`. ImageBuilder installs them with
-its package manager and resolves curl, CA certificates, Python and Lua dependencies.
+its package manager and resolves curl, CA certificates, Python, cryptography and Lua dependencies.
 The script-only recovery package is assembled without compiling its runtime
 dependencies in the SDK; these are installed from the target firmware repositories.
 [Upstream Internet Detector](https://github.com/gSpotx2f/luci-app-internet-detector)
@@ -20,7 +20,11 @@ not followed. No ping, TCP-only, modem status or single-host vote determines hea
 On failure the down-script rechecks the same HTTPS list, identifies the CPE, and
 dispatches its model-specific API. The verified handler supports **Huawei H155-380
 (5G CPE 5)** using challenge/response login and `POST /api/device/control` with
-`Control=1`. Unknown models are logged without guessed reboot commands. All CPE
+`Control=1`. **FiberHome LG6851F** uses its own encrypted session web API,
+numeric login acknowledgement and `do_cmd_web` reboot commands. Both models use
+the same UCI configuration schema and are detected automatically. A missing Huawei
+endpoint (HTTP 400/404) permits the LG6851F identification probe; transport timeouts
+do not trigger a guessed vendor fallback. Unknown models are logged without guessed reboot commands. All CPE
 attempts, including failures, are followed by a 120-second wait and HTTPS recheck.
 OpenWrt reboots only if every target still fails.
 
@@ -52,6 +56,16 @@ PYCODE
 The prompt hides the password while typing. Do not put it in the command line,
 UCI, a shell history entry, the repository, or an Actions secret used to
 produce downloadable firmware. The file must be owned by root and mode 0600.
+
+Set `cpe-watchdog.main.address` to the actual CPE HTTP(S) origin before checking.
+For LG6851F, provision `/etc/cpe-watchdog/fiberhome-rsa.pem` (root, mode 0600)
+from that device's own firmware web frontend: its `_0xp98jky` value is a base64
+PKCS#8 key, wrapped in `BEGIN PRIVATE KEY` / `END PRIVATE KEY` PEM markers.
+This firmware transport key decodes the runtime `is_encrypt` bootstrap; it is
+separate from the administrator password. Keep both files on the router only,
+outside source control and downloadable firmware. Huawei does not use this file.
+The LG6851F protocol implementation fails explicitly if the local firmware key
+is missing or the encrypted protocol changes; it never sends guessed reboot APIs.
 
 Run nondestructive checks before enabling recovery:
 
@@ -167,6 +181,23 @@ logread -e cpe-watchdog
 
 Export `events.jsonl` and its existing numbered archives for an outage-test
 analysis. No intentional live outage/reboot was performed during deployment.
+
+**LuCI → Status → CPE 恢复日志** reads all retained files through the authenticated,
+read-only `luci.cpe-watchdog` RPC. The page supports 25-row paging, UTC date/event
+filters, expandable details, refresh and complete filtered JSONL export. The event
+filter uses literal substring matching: `reboot` includes CPE reboot attempts,
+acknowledgements/failures and OpenWrt reboot requests in both display and export. Only
+reviewed audit fields are exposed; the RPC accepts no file path or executable.
+Exports detect concurrent history changes and request a retry rather than
+silently duplicate or omit rows. Finite retention still applies to this page.
+
+The additional installed assets are:
+
+- `/usr/lib/cpe-watchdog/fiberhome.py` and `history.py`
+- `/usr/libexec/rpcd/luci.cpe-watchdog`
+- `/usr/share/rpcd/acl.d/luci-app-cpe-watchdog.json`
+- `/usr/share/luci/menu.d/luci-app-cpe-watchdog.json`
+- `/www/luci-static/resources/view/cpe-watchdog-logs.js`
 
 Live deployment on OpenWrt 25.12.5 (192.168.17.1): three r2 APKs installed,
 CPE identity and authentication verified, procd service enabled, and two

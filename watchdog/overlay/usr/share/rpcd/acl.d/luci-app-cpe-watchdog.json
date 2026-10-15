@@ -1,0 +1,10 @@
+{
+	"luci-app-cpe-watchdog": {
+		"description": "Read sanitized CPE watchdog history",
+		"read": {
+			"ubus": {
+				"luci.cpe-watchdog": [ "query", "export" ]
+			}
+		}
+	}
+}

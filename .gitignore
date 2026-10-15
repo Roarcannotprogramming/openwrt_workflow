@@ -3,3 +3,4 @@ __pycache__/
 watchdog-packages/
 passwall-packages/
 watchdog/overlay/etc/cpe-watchdog/password
+watchdog/overlay/etc/cpe-watchdog/*.pem
